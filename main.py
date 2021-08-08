@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import re
 import os
+from Utils import PaginationItem, PaginatorView, PaginationItem
 
 
 def cog_loader(bot):  # Loads all the Cogs
@@ -13,12 +14,17 @@ def cog_loader(bot):  # Loads all the Cogs
         for filename in os.listdir(path):
             if filename.endswith('.py') and not filename.startswith(skip_files):
                 extension = f'{path_name}.{filename[:-3]}'
-                bot.load_extension(extension)
+                try:
+                    bot.load_extension(extension)
+                except commands.NoEntryPointError:
+                    pass
 
 
 def get_prefix(bot, message):
     if message.guild is None:
         return '.'
+    return '.'
+    # TODO: Finish
 
 
 class MyBot(commands.Bot):
@@ -63,9 +69,4 @@ async def on_message(message: discord.Message):
     await bot.process_commands(message)
 
 
-try:
-    token = os.environ['TOKEN']
-except KeyError:
-    token = os.environ['TEST_TOKEN']
-else:
-    bot.run(token)
+bot.run('NzQwNDcxOTIwMzc3NDYyNzk1.XypgNw.N990s4TH7mCHYEKp0cqI34mz_e0')

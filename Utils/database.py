@@ -22,10 +22,10 @@ class ItemNotFound(DatabaseException):
 
 class Client:
     CLUSTER = MongoClient(
-        os.environ['MONGODB'],
+        'mongodb+srv://ignis:eGwn88jzefoVpimO@toram-wiki.k99cu.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
         ssl=True,
         ssl_cert_reqs=ssl.CERT_NONE
-    )
+    )  # TODO: Remove Temporary Database Key
 
     DISCORD = CLUSTER['discord']
     WIKI = CLUSTER['wiki']
