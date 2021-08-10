@@ -1,19 +1,28 @@
 # TODO: Create a class for items that are to be paginated
 # TODO:
+from types import FunctionType
+from . import ui
 from discord.ext import menus
+import inspect
 import discord
 from typing import Union, Any
 import asyncio
-from discord import Interaction, ButtonStyle, SelectOption
-from discord.ui import button, Select
+from discord import Interaction, ButtonStyle, SelectOption, InteractionMessage
+from discord.ui import button, Select, Item
 from discord.ext import commands
+from . import database
+import time
+from bson.binary import Binary, USER_DEFINED_SUBTYPE
 
 
 class PaginationItem:
     def __init__(self, name, item: Any = None):
         # TODO: Decide whether to have NoneType as the default value of :param item:
-        self.name = name
+        self.name = str(name)
         self.item = item
+
+    def __str__(self):
+        return self.name
 
     def to_dict(self):
         return {self.name: self}
@@ -22,6 +31,10 @@ class PaginationItem:
         """Invoked when you want to display the information.
         """
         raise NotImplementedError
+
+    def __getitem__(self, item):  # TODO: Maybe remove this
+        if item == self.name:
+            return self
 
 
 class Paginator:
@@ -137,7 +150,7 @@ class Paginator:
         return asyncio.run(self.show_page(current_page))  # TODO: Find a way to remove this asyncio run
 
     def __getitem__(self, item):  # basically the same as `source.open_child`
-        return self.source.get_child(self.current_page, item)
+        return self.source.get_child(self.source.get_page(self.current_page), item)
 
 
 class PageSource:
@@ -145,6 +158,8 @@ class PageSource:
     def __init__(self, data: list[PaginationItem], *, per_page):
         if all(isinstance(item, PaginationItem) is True for item in data) is False:
             raise TypeError(f"Elements in data is not of the same type")
+        if self._check_duplicates([item.name for item in data]) is True:
+            raise Exception('Data cannot have duplicate names!')
         self.data = data
         self.per_page = per_page
 
@@ -153,6 +168,14 @@ class PageSource:
             pages += 1
 
         self.max_pages = pages
+
+    @staticmethod
+    def _check_duplicates(array: list) -> bool:
+        # Returns True if there are duplicates
+        for elem in array:
+            if array.count(elem) > 1:
+                return True
+        return False
 
     async def format_page(self, data: list[PaginationItem]):
         """How each page should look like
@@ -178,88 +201,163 @@ class PageSource:
             base = page_number * self.per_page
             return self.data[base:base + self.per_page]
 
-    def get_child(self, page_number, item) -> object:
+    @staticmethod
+    def page_to_dictionary(page: list[PaginationItem]) -> dict:
+        # TODO: Maybe turn to generator
+        for ele in page:
+            yield ele.to_dict()
+
+    def get_child(self, page: list[PaginationItem], item) -> PaginationItem:
         """Returns a child or item of a page
-        """
-        page = self.get_page(page_number)
+        """  # TODO: Decide whether to change :param page_number: to :param page:
         if isinstance(item, int):
             return page[item]
-        # TODO: Do something if :param item: is :class:`str`
-        #  maybe will add on :class:`PaginationItem`
+        if isinstance(item, str):
+            for element in self.page_to_dictionary(page):
+                # element_name is of the class :dict:
+                if item in element:
+                    return element[item]
 
 
 class Dropdown(Select):
+    def __init__(self, *, paginator, options: FunctionType, **kwargs):
+        if not isinstance(options, FunctionType):
+            raise TypeError(f'Expected {FunctionType} not {options.__class__}')
+        if 'paginator' not in inspect.signature(options).parameters:
+            raise Exception('Missing Argument:`paginator`!')
+        options = options(paginator)
+        self.paginator = paginator
+        self.initialized = True
+        super().__init__(options=options, **kwargs)
+
+    @staticmethod
+    def fetch_view(interaction_id: int):
+        return database.global_dict[interaction_id]
 
     async def callback(self, interaction: discord.Interaction):
         # Use the interaction object to send a response message containing
         # the user's favourite colour or choice. The self object refers to the
         # Select object, and the values attribute gets a list of the user's
         # selected options. We only want the first one.
-        await interaction.response.send_message(f'Your favourite colour is {self.values[0]}')  # TODO: Finish
+        paginator = self.paginator
+        child: PaginationItem = paginator[self.values[0]]
+        view = self.fetch_view(interaction.id)
+        await interaction.response.edit_message(content=await child.display(), view=view)  # TODO: Finish
 
 
 class PaginatorView(discord.ui.View):
     """Implements the Paginator
     """
-    def __init__(self, ctx, *, paginator: Paginator, dropdown: Select = None, timeout=None):
-        # IMPORTANT NOTE: Paginator must be initialized
+    # TODO: Add what happens if a user uses `PaginationItem.display()`
+    # TODO: Make buttons more customizable
+    def __init__(self, ctx, *, paginator: Paginator, options: FunctionType, dropdown: Dropdown = None, timeout=None):
+        # TODO: Maybe add an `Options` parameter
+        # IMPORTANT NOTE: Paginator must be initialized and Dropdown must not be initialized!
         super().__init__(timeout=timeout)
+
         if not isinstance(paginator, Paginator):
             raise TypeError(f'Expected {Paginator} not {paginator.__class__}')
-        if not isinstance(dropdown, Select) and dropdown is not None:
-            raise TypeError(f'Expected {Select} not {dropdown.__class__}')
-
-        if not paginator.initialized:
+        if not isinstance(options, FunctionType):
+            raise TypeError(f'Expected {FunctionType} not {options.__class__}')
+        if not hasattr(paginator, 'initialized'):
             raise Exception('Paginator is not initialized!')
+        if hasattr(dropdown, 'initialized'):
+            raise Exception('Dropdown must not be initialized!')
+
         self.ctx: commands.Context = ctx
         self.paginator = paginator
         self.timeout = timeout
-        self.dropdown = dropdown
-
-        page = paginator.source.get_page(paginator.current_page)
-        options = [
-            SelectOption(label=item.name) for item in page
-        ]
-        _default_dropdown = Dropdown(
-            placeholder='See more information about an item...',
-            options=options
-        )
-        self.add_item(self.dropdown if self.dropdown else _default_dropdown)
+        self.options: FunctionType = options  # not initialized
+        self.dropdown: Dropdown = Dropdown if dropdown is None else dropdown
+        self._init__dropdown: Dropdown = self.dropdown(paginator=paginator, options=options)  # initialized dropdown
+        self.add_item(self._init__dropdown)
+        self.buttons = self.children.copy()
+        self.message_state_before_callback: discord.Message = None
+        self.message_state_after_callback: discord.Message = None
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         return interaction.user.id == self.ctx.author.id
+
+    async def _scheduled_task(self, item: Item, interaction: Interaction):
+        try:
+            if self.timeout:
+                self.__timeout_expiry = time.monotonic() + self.timeout
+
+            allow = await self.interaction_check(interaction)
+            if not allow:
+                return
+
+            self.message_state_before_callback: discord.Message = interaction.message
+
+            await self.on_interaction(item, interaction)  # event
+            await item.callback(interaction)
+            if not interaction.response._responded:
+                await interaction.response.defer()
+
+            self.message_state_after_callback: InteractionMessage = await interaction.original_message()  # TODO: Decide whether to remove this
+        except Exception as e:
+            return await self.on_error(e, item, interaction)
+
+    async def go_back_callback(self, interaction: discord.Interaction):
+        # the callback for the `go back` buttons
+        self.clear_items()
+        for button in self.buttons:
+            self.add_item(button)
+
+        content = self.message_state_before_callback.content
+        # NOTE: Won't work if there is another button except the `GO BACK` button
+        await interaction.response.edit_message(content=content, view=self)
+
+    async def on_dropdown_select(self, item: discord.ui.Item, interaction: Interaction):
+        """This is just for removing the buttons and things in the back-end.
+        The front end will be handled by the self.dropdown class.
+        """
+        if isinstance(item, self.dropdown):
+            self.clear_items()
+            self.add_item(ui.BetterButton(callback=self.go_back_callback, style=ButtonStyle.grey, emoji='🔙'))
+            # TODO: Improve GO BACK Emoji
+            database.global_dict[interaction.id] = self
+
+    async def on_interaction(self, item: discord.ui.Item, interaction: discord.Interaction):
+        """On Interaction Event"""
+        await self.on_dropdown_select(item, interaction)
 
     @button(emoji="⏮️", style=ButtonStyle.grey)
     async def go_first_page(self, button: discord.ui.Button, interaction: discord.Interaction):
         paginator = self.paginator
         kwargs = await paginator.show_page(0)
-        await self.update(kwargs, interaction)
+        await self.update_select_buttons(kwargs, interaction)
 
     @button(emoji="⬅️", style=ButtonStyle.grey)
     async def go_left(self, button: discord.ui.Button, interaction: discord.Interaction):
         paginator = self.paginator
         current_page = paginator.current_page
         kwargs = await paginator.show_page(current_page - 1)
-        await self.update(kwargs, interaction)
+        await self.update_select_buttons(kwargs, interaction)
 
     @button(emoji="➡️", style=ButtonStyle.grey)
     async def go_right(self, button: discord.ui.Button, interaction: discord.Interaction):
         paginator = self.paginator
         current_page = paginator.current_page
         kwargs = await paginator.show_page(current_page + 1)
-        await self.update(kwargs, interaction)
+        await self.update_select_buttons(kwargs, interaction)
 
     @button(emoji="⏭️", style=ButtonStyle.grey)
     async def go_last_page(self, button: discord.ui.Button, interaction: discord.Interaction):
         paginator = self.paginator
-        max_page = paginator.source.max_pages
-        kwargs = await paginator.show_page(max_page)  # TODO: Verify if max_pages index is correct
-        await self.update(kwargs, interaction)
+        max_pages = paginator.source.max_pages
+        kwargs = await paginator.show_page(max_pages - 1)  # we subtract one because max_pages doesn't start at 0
+        await self.update_select_buttons(kwargs, interaction)
 
-    async def update(self, kwargs, interaction: discord.Interaction):
+    async def update_select_buttons(self, kwargs, interaction: discord.Interaction):
         """Updates the Select Button Options
         """
         paginator_view = PaginatorView(
-            self.ctx, paginator=self.paginator, dropdown=self.dropdown, timeout=self.timeout
-        )
+            self.ctx, paginator=self.paginator, options=self.options, dropdown=self.dropdown, timeout=self.timeout
+        )  # reinitializes the Paginator
         await interaction.response.edit_message(**kwargs, view=paginator_view)
+
+    async def go_to_child(self):
+        """What happens if a user uses `PaginationItem.display()`
+        """
+        pass

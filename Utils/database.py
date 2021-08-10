@@ -3,11 +3,10 @@ import discord
 import pymongo
 from pymongo import MongoClient
 import ssl
+import inspect
+import pickle
 
-
-__all__ = (
-    'Database'
-)
+global_dict = {}
 
 
 class DatabaseException(Exception):

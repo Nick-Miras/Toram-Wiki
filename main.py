@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import re
 import os
-from Utils import PaginationItem, PaginatorView, PaginationItem
+from Utils import global_dict
 
 
 def cog_loader(bot):  # Loads all the Cogs
@@ -21,9 +21,10 @@ def cog_loader(bot):  # Loads all the Cogs
 
 
 def get_prefix(bot, message):
+    default_prefix = '$'
     if message.guild is None:
-        return '.'
-    return '.'
+        return default_prefix
+    return default_prefix
     # TODO: Finish
 
 
