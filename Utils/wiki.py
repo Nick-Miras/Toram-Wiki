@@ -11,9 +11,21 @@ import asyncio
 from .profiler_ import profile
 
 
-def ngrams(string):
-    for i in range(1, len(string) + 1):
-        yield string[0:i].lower()
+class Grams:
+
+    @staticmethod
+    def ngrams(string):
+        for i in range(1, len(string) + 1):
+            yield string[0:i].lower()
+
+    @staticmethod
+    def gram(string, n: int):
+        for i in range(n, len(string) + 1):
+            yield string[i-n: i].lower()
+
+    @classmethod
+    def trigram(cls, string):  # generator
+        return cls.gram(string, 3)
 
 
 class WikiException(Exception):
@@ -236,7 +248,7 @@ class Item(WikiObject):
             # TODO: Decide whether to use a list of dictionaries instead of only using a single dictionary
             index = {
                 'phonetic': metaphone(self.name),
-                'ngrams': list(ngrams(self.name)),
+                'ngrams': list(Grams.ngrams(self.name)),
             }
         self._index = index
 
@@ -315,7 +327,7 @@ class QueryItem:
         self.item_name = item_name
 
     @staticmethod
-    async def _query_phonetic(word) -> list[dict]:  # rank 1
+    async def _query_phonetic(word) -> list[dict]:  # rank 1  # TODO: Maybe Remove This
         pipeline = [
             {'$match': {'index.phonetic': metaphone(word)}}
         ]  # removed project
@@ -325,32 +337,47 @@ class QueryItem:
     async def _query_text(word) -> list[dict]:  # rank 2
         pipeline = [
             {'$match': {'$text': {'$search': word}}},  # search
-            {'$addFields': {
-                'rank': {'$size': {
-                    '$setIntersection': [word.lower().split(), {'$split': [{'$toLower': '$name'}, ' ']}]
-                }}
+            {'$addFields': {'rank': {  # TODO: Verify if the Round and Divide Operators are required
+                '$round': [
+                    {'$divide': [
+                        {'$size': {'$setIntersection': [word.lower().split(), {'$split': [{'$toLower': '$name'}, ' ']}]}},
+                        {'$size': {'$split': [{'$toLower': '$name'}, ' ']}}
+                    ]},
+                    2
+                ]
+            }
             }
              },
             {'$match': {'rank': {'$gt': 0}}},  # TODO: Verify if this should be added
             {'$sort': {'rank': -1}}
         ]
+
+        pipeline_2 = [
+            {'$match': {'$text': {'$search': word}}},  # search
+            {'$sort': {'score': {'$meta': "textScore"}}}
+        ]
         """The `rank` field is an integer that is derived from the size of the intersected array of word.lower().split() 
         and the $name.lower().split()
         """
-        return list(Database.ITEMS.aggregate(pipeline))
+        return list(Database.ITEMS.aggregate(pipeline_2))
 
     @staticmethod
     async def _query_ngrams(word) -> list[dict]:  # rank 3
-        # TODO: Check if this actually works
-        grams = list(ngrams(word))
+        grams = list(Grams.trigram(word))
+        # TODO: Replace the damn name of trigram
         pipeline = [
-            {'$match': {'index.ngrams': {'$in': grams}}},  # search
-            {'$addFields': {
-                'rank': {'$size': {
-                    '$setIntersection': [grams, '$index.ngrams']
-                }}
+            {'$match': {'index.trigram': {'$in': grams}}},  # search
+            {'$addFields': {'rank': {  # TODO: Verify if the Round Operator is required
+                '$round': [
+                    {'$divide': [
+                        {'$size': {'$setIntersection': [grams, '$index.trigram']}},
+                        {'$size': '$index.trigram'}
+                    ]},
+                    2
+                ]
             }
-             },
+            }
+            },
             {'$match': {'rank': {'$gt': 0}}},  # TODO: Verify if this should be added
             {'$sort': {'rank': -1}}
         ]
@@ -385,7 +412,7 @@ class QueryItem:
         item_name = self.item_name
         collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
         if exact_match := list(Database.ITEMS.find({'name': item_name}).collation(collation)):
-            return exact_match
+            return exact_match  # should return an array of the size of 1
         if phrase_match := list(Database.ITEMS.find({'$text': {'$search': f'\"{item_name}\"'}})):
             return phrase_match
         # from here on, exact word matching is exhausted so we will have to find other ways to match the query

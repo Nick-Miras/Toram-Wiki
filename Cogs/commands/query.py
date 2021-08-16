@@ -68,10 +68,6 @@ class Query(commands.Cog):
     @staticmethod
     def _process_results(results: list[dict]) -> list[Item]:
         def mapper(item: dict):
-            try:
-                item.pop('rank')
-            except KeyError:
-                pass
             return Item.from_dict(item)
 
         return list(map(mapper, results))
@@ -82,27 +78,33 @@ class Query(commands.Cog):
             return ItemPagination(item.name, item)
         return list(map(mapper, items))
 
+    @classmethod
+    async def _search(cls, ctx: commands.Context, query: str) -> dict:
+        query_item = QueryItem(query)
+        results: list[dict] = await query_item.output()
+
+        if not results:
+            embed = Models.error_embed('Item Not Found!')
+            raise Error(embed, embed=True)
+
+        items: list[Item] = cls._process_results(results)
+        if len(items) == 1:
+            embed = await cls.display_as_embed(items[0])
+            return {'embed': embed}
+        else:
+            data: list[ItemPagination] = cls._process_items(items)
+            paginator = Paginator(source=Source(data, per_page=5))
+            view = PaginatorView(ctx, paginator=paginator, dropdown=QueryDropdown)
+            kwargs = await paginator.show_initial_page()
+            return {**kwargs, 'view': view}
+
     @commands.command()
     async def search(self, ctx, *, query: Optional[str] = None):
         if query is None:
             raise Error(f'`{ctx.prefix}search (item name)`')
 
-        query_item = QueryItem(query)
-        results: list[dict] = await query_item.output()
-        if not results:
-            embed = Models.error_embed('Item Not Found!')
-            raise Error(embed, embed=True)
-
-        items: list[Item] = self._process_results(results)
-        if len(items) == 1:
-            embed = await self.display_as_embed(items[0])
-            return await ctx.send(embed=embed)
-
-        data: list[ItemPagination] = self._process_items(items)
-        paginator = Paginator(source=Source(data, per_page=5))
-        view = PaginatorView(ctx, paginator=paginator, dropdown=QueryDropdown)
-        kwargs = await paginator.show_initial_page()
-        await ctx.send(**kwargs, view=view)
+        kwargs = await self._search(ctx, query)
+        await ctx.send(**kwargs)
 
 
 def setup(bot):
