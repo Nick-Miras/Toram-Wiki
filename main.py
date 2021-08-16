@@ -70,4 +70,9 @@ async def on_message(message: discord.Message):
     await bot.process_commands(message)
 
 
-bot.run('NzQwNDcxOTIwMzc3NDYyNzk1.XypgNw.N990s4TH7mCHYEKp0cqI34mz_e0')
+try:
+    token = os.environ['TOKEN']
+except KeyError:
+    token = os.environ['TEST_TOKEN']
+
+bot.run(token)
