@@ -15,6 +15,7 @@ class Help(commands.Cog):  # TODO: Create Paginator for each command
             f'{pfx}search': 'Command for searching information about Toram Items',
         }
         __admin_fields = {
+            f'{pfx}set prefix': 'Sets the prefix'
         }
 
         if ctx.author.guild_permissions.administrator:
