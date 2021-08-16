@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 import pytz
 from typing import Union
 from discord.ext import commands
-from .errors import CustomError
+from .errors import Error
 import discord
 
 fmt = '%Y-%m-%d %I:%M %p'  # 2012-12-21 01:50 PM
@@ -26,7 +26,7 @@ class TimeConverter(commands.Converter):
         # converts a time string into a datetime object without timezone information
         if ToTime.valid_time(argument) is False:
             error = f'{argument} is not a valid string format\nValid Format Example: `2012-12-21 01:50 PM`'
-            raise CustomError(error, embed=True)
+            raise Error(error, embed=True)
         return ToTime.time_to_datetime(argument)
 
 

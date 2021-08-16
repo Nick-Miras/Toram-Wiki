@@ -20,10 +20,8 @@ class ItemNotFound(DatabaseException):
 
 
 class Client:
-    CLUSTER = MongoClient(
-        'mongodb+srv://ignis:eGwn88jzefoVpimO@toram-wiki.k99cu.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        ssl=True,
-        ssl_cert_reqs=ssl.CERT_NONE
+    CLUSTER = MongoClient(  # Temporary
+        os.environ['MONGOCLIENT']
     )  # TODO: Remove Temporary Database Key
 
     DISCORD = CLUSTER['discord']
@@ -38,6 +36,4 @@ class Database:
 
     @classmethod
     def exists(cls, collection: pymongo.collection.Collection, lookup: dict) -> bool:
-        if collection.find_one(lookup):
-            return True
-        return False
+        return bool(collection.count_documents(lookup))

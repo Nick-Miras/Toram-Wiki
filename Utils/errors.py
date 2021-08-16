@@ -2,7 +2,7 @@ from discord.ext.commands.errors import *
 import discord
 
 
-class CustomError(CommandError):
+class Error(CommandError):
     def __init__(self, message, embed: bool = False, channel=None):
         """Custom Error Command that can be handled by the Error Cogs.
 

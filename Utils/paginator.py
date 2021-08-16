@@ -1,18 +1,23 @@
-# TODO: Create a class for items that are to be paginated
-# TODO:
 from types import FunctionType
 from . import ui
 from discord.ext import menus
 import inspect
 import discord
-from typing import Union, Any
+from typing import Union, Any, Optional
 import asyncio
 from discord import Interaction, ButtonStyle, SelectOption, InteractionMessage
 from discord.ui import button, Select, Item
 from discord.ext import commands
 from . import database
 import time
-from bson.binary import Binary, USER_DEFINED_SUBTYPE
+
+
+def return_kwargs(value):
+    if isinstance(value, str):
+        return {'content': value, 'embed': None}
+    if isinstance(value, discord.Embed):
+        return {'embed': value, 'content': None}
+    return
 
 
 class PaginationItem:
@@ -35,6 +40,7 @@ class PaginationItem:
     def __getitem__(self, item):  # TODO: Maybe remove this
         if item == self.name:
             return self
+        raise IndexError(f'{item} is an Invalid Index')
 
 
 class Paginator:
@@ -56,8 +62,8 @@ class Paginator:
     def current_page(self, value):
         if value < 0:
             self._current_page = 0
-        elif (max_pages := self.source.max_pages) < value:  # if the value surpasses the max pages
-            self._current_page = max_pages
+        elif (max_pages := self.source.max_pages) <= value:  # if the value surpasses the max pages
+            self._current_page = max_pages - 1
         else:
             self._current_page = value
 
@@ -96,14 +102,11 @@ class Paginator:
             This dictionary contains the content or the discord.Embed would be used later as the content for
             the message.
         """
-        value = await discord.utils.maybe_coroutine(self.source.format_page, page)
+        value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
         # since we don't know if format_page will be a coro or not we use this, plus this function also injects the
         # arguments into the function(1st argument), which makes the 2nd and so on.. argument(of :func: maybe_coroutine)
         # to be the arguments of the function(1st argument)
-        if isinstance(value, str):
-            return {'content': value, 'embed': None}
-        elif isinstance(value, discord.Embed):
-            return {'embed': value, 'content': None}
+        return return_kwargs(value)
 
     async def show_page(self, page_number) -> dict:
         """IMPORTANT NOTE: This is only used for displaying the page(front end)
@@ -114,31 +117,13 @@ class Paginator:
         kwargs = await self._fetch_page_format(page)
         return kwargs
 
-    async def show_checked_page(self, page_number):  # idk what this even do
-        """IMPORTANT NOTE: This is only used for displaying the page(front end)
-        and this doesn't involve anything with backend manipulation
-        """
-        # TODO: Decide whether to use this function or just rely on current_page not surpassing the domain
-        max_pages = self.source.max_pages
-        try:
-            if max_pages is None:
-                # If it doesn't give maximum pages, it cannot be checked
-                result = await self.show_page(page_number)
-            elif max_pages > page_number >= 0:
-                result = await self.show_page(page_number)
-        except IndexError:
-            # An error happened that can be handled, so ignore it.
-            pass
-        else:
-            return result
-
-    def show_next_page(self) -> dict:  # the same as __next__
-        return self.__next__()  # TODO: Decide whether to use __next__ or not
+    async def show_next_page(self):
+        return await self.show_page(self.current_page + 1)
 
     async def show_current_page(self):
         return await self.show_page(self.current_page)
 
-    async def initial_page(self):
+    async def show_initial_page(self):
         return await self.show_page(0)
 
     def __iter__(self):
@@ -177,11 +162,12 @@ class PageSource:
                 return True
         return False
 
-    async def format_page(self, data: list[PaginationItem]):
+    async def format_page(self, menu: Paginator, data: list[PaginationItem]):
         """How each page should look like
 
         Parameters
         ----------
+        menu: :class:`Paginator`
         data:
             The page returned by :meth:`PageSource.get_page`.
             Preferably: :class:`PaginationItem`
@@ -195,6 +181,13 @@ class PageSource:
         If :attr:`per_page` is set to ``1`` then this returns a list that contains only a single
         element. Otherwise it returns at most :attr:`per_page` elements.
         """
+        if page_number < 1:
+            page_number = 0
+        elif page_number >= self.max_pages:
+            page_number = self.max_pages - 1
+        else:
+            page_number = page_number
+
         if self.per_page == 1:
             return [self.data[page_number]]
         else:
@@ -203,62 +196,67 @@ class PageSource:
 
     @staticmethod
     def page_to_dictionary(page: list[PaginationItem]) -> dict:
-        # TODO: Maybe turn to generator
-        for ele in page:
-            yield ele.to_dict()
+        for item in page:
+            yield item.to_dict()
 
-    def get_child(self, page: list[PaginationItem], item) -> PaginationItem:
+    @staticmethod
+    def get_child(page: list[PaginationItem], item) -> PaginationItem:
         """Returns a child or item of a page
-        """  # TODO: Decide whether to change :param page_number: to :param page:
+        """
         if isinstance(item, int):
             return page[item]
         if isinstance(item, str):
-            for element in self.page_to_dictionary(page):
-                # element_name is of the class :dict:
-                if item in element:
-                    return element[item]
+            for pagination_item in page:
+                try:
+                    return pagination_item[item]
+                except IndexError:
+                    pass
+        raise IndexError('Child does not exist')
 
 
 class Dropdown(Select):
-    def __init__(self, *, paginator, options: FunctionType, **kwargs):
-        if not isinstance(options, FunctionType):
-            raise TypeError(f'Expected {FunctionType} not {options.__class__}')
-        if 'paginator' not in inspect.signature(options).parameters:
-            raise Exception('Missing Argument:`paginator`!')
-        options = options(paginator)
+    def __init__(self, *, paginator, **kwargs):
         self.paginator = paginator
         self.initialized = True
-        super().__init__(options=options, **kwargs)
+        super().__init__(options=self.get_options(paginator), **kwargs)
+
+    @staticmethod
+    def get_options(paginator) -> list[SelectOption]:
+        raise NotImplementedError
 
     @staticmethod
     def fetch_view(interaction_id: int):
         return database.global_dict[interaction_id]
+
+    async def display(self) -> Any:
+        """This is used to display the child of a dropdown menu
+        """
+
+        raise NotImplementedError
 
     async def callback(self, interaction: discord.Interaction):
         # Use the interaction object to send a response message containing
         # the user's favourite colour or choice. The self object refers to the
         # Select object, and the values attribute gets a list of the user's
         # selected options. We only want the first one.
-        paginator = self.paginator
-        child: PaginationItem = paginator[self.values[0]]
         view = self.fetch_view(interaction.id)
-        await interaction.response.edit_message(content=await child.display(), view=view)  # TODO: Finish
+        kwargs = return_kwargs(await self.display())
+        await interaction.response.edit_message(**kwargs, view=view)
 
 
 class PaginatorView(discord.ui.View):
     """Implements the Paginator
     """
-    # TODO: Add what happens if a user uses `PaginationItem.display()`
     # TODO: Make buttons more customizable
-    def __init__(self, ctx, *, paginator: Paginator, options: FunctionType, dropdown: Dropdown = None, timeout=None):
-        # TODO: Maybe add an `Options` parameter
-        # IMPORTANT NOTE: Paginator must be initialized and Dropdown must not be initialized!
+    def __init__(self, ctx, *, paginator: Paginator, dropdown: Dropdown, timeout=None):
+        """
+        IMPORTANT NOTE: Paginator must be initialized and Dropdown must not be initialized!
+        """
         super().__init__(timeout=timeout)
 
         if not isinstance(paginator, Paginator):
             raise TypeError(f'Expected {Paginator} not {paginator.__class__}')
-        if not isinstance(options, FunctionType):
-            raise TypeError(f'Expected {FunctionType} not {options.__class__}')
+
         if not hasattr(paginator, 'initialized'):
             raise Exception('Paginator is not initialized!')
         if hasattr(dropdown, 'initialized'):
@@ -267,13 +265,11 @@ class PaginatorView(discord.ui.View):
         self.ctx: commands.Context = ctx
         self.paginator = paginator
         self.timeout = timeout
-        self.options: FunctionType = options  # not initialized
-        self.dropdown: Dropdown = Dropdown if dropdown is None else dropdown
-        self._init__dropdown: Dropdown = self.dropdown(paginator=paginator, options=options)  # initialized dropdown
+        self.dropdown: Dropdown = dropdown
+        self._init__dropdown: Dropdown = self.dropdown(paginator=paginator)  # initialized dropdown
         self.add_item(self._init__dropdown)
         self.buttons = self.children.copy()
-        self.message_state_before_callback: discord.Message = None
-        self.message_state_after_callback: discord.Message = None
+        self.message_before_dropdown_interaction: Optional[discord.Message] = None
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         return interaction.user.id == self.ctx.author.id
@@ -287,14 +283,11 @@ class PaginatorView(discord.ui.View):
             if not allow:
                 return
 
-            self.message_state_before_callback: discord.Message = interaction.message
-
-            await self.on_interaction(item, interaction)  # event
+            await self.on_interaction(item, interaction)  # TODO: Maybe Create a Decorator Event for this
             await item.callback(interaction)
             if not interaction.response._responded:
                 await interaction.response.defer()
 
-            self.message_state_after_callback: InteractionMessage = await interaction.original_message()  # TODO: Decide whether to remove this
         except Exception as e:
             return await self.on_error(e, item, interaction)
 
@@ -304,16 +297,20 @@ class PaginatorView(discord.ui.View):
         for button in self.buttons:
             self.add_item(button)
 
-        content = self.message_state_before_callback.content
+        prev_message_state = self.message_before_dropdown_interaction
+
+        kwargs = {'content': prev_message_state.content, 'embed': prev_message_state.embeds[0]}
         # NOTE: Won't work if there is another button except the `GO BACK` button
-        await interaction.response.edit_message(content=content, view=self)
+        await interaction.response.edit_message(**kwargs, view=self)
 
     async def on_dropdown_select(self, item: discord.ui.Item, interaction: Interaction):
-        """This is just for removing the buttons and things in the back-end.
+        """
+        This is just for removing the buttons and things in the back-end.
         The front end will be handled by the self.dropdown class.
         """
         if isinstance(item, self.dropdown):
             self.clear_items()
+            self.message_before_dropdown_interaction = interaction.message
             self.add_item(ui.BetterButton(callback=self.go_back_callback, style=ButtonStyle.grey, emoji='🔙'))
             # TODO: Improve GO BACK Emoji
             database.global_dict[interaction.id] = self
@@ -353,11 +350,6 @@ class PaginatorView(discord.ui.View):
         """Updates the Select Button Options
         """
         paginator_view = PaginatorView(
-            self.ctx, paginator=self.paginator, options=self.options, dropdown=self.dropdown, timeout=self.timeout
+            self.ctx, paginator=self.paginator, dropdown=self.dropdown, timeout=self.timeout
         )  # reinitializes the Paginator
         await interaction.response.edit_message(**kwargs, view=paginator_view)
-
-    async def go_to_child(self):
-        """What happens if a user uses `PaginationItem.display()`
-        """
-        pass
