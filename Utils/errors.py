@@ -1,5 +1,5 @@
-from discord.ext.commands.errors import *
 import discord
+from discord.ext.commands.errors import *
 
 
 class Error(CommandError):

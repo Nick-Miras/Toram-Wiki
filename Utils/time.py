@@ -7,12 +7,15 @@ Note:
 """
 from datetime import datetime
 from datetime import timezone as tz
-from zoneinfo import ZoneInfo
-import pytz
 from typing import Union
-from discord.ext import commands
-from .errors import Error
+from zoneinfo import ZoneInfo
+
 import discord
+import pytz
+from discord.ext import commands
+
+from . import Database
+from .errors import Error
 
 fmt = '%Y-%m-%d %I:%M %p'  # 2012-12-21 01:50 PM
 

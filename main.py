@@ -1,10 +1,10 @@
+import os
+import re
+
 import discord
 from discord.ext import commands
-import re
-import os
-from Utils.variables import Models
+
 from Utils.database import Database
-import pymongo.errors
 
 
 def cog_loader(bot):  # Loads all the Cogs

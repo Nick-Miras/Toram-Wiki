@@ -1,15 +1,16 @@
-from types import FunctionType
 from . import ui
-from discord.ext import menus
-import inspect
 import discord
-from typing import Union, Any, Optional
 import asyncio
-from discord import Interaction, ButtonStyle, SelectOption, InteractionMessage
-from discord.ui import button, Select, Item
-from discord.ext import commands
-from . import database
 import time
+from typing import Any, Optional, Type
+
+import discord
+from discord import Interaction, ButtonStyle, SelectOption
+from discord.ext import commands
+from discord.ui import button, Select, Item
+
+from . import database
+from . import ui
 
 
 def return_kwargs(value):
@@ -248,7 +249,8 @@ class PaginatorView(discord.ui.View):
     """Implements the Paginator
     """
     # TODO: Make buttons more customizable
-    def __init__(self, ctx, *, paginator: Paginator, dropdown: Dropdown, timeout=None):
+    def __init__(self, ctx, *, paginator: Paginator, dropdown: Type[Dropdown], timeout=None):
+        # TODO: Create proper type hint for :param dropdown:
         """
         IMPORTANT NOTE: Paginator must be initialized and Dropdown must not be initialized!
         """
@@ -265,7 +267,7 @@ class PaginatorView(discord.ui.View):
         self.ctx: commands.Context = ctx
         self.paginator = paginator
         self.timeout = timeout
-        self.dropdown: Dropdown = dropdown
+        self.dropdown: Type[Dropdown] = dropdown  # uninitialized
         self._init__dropdown: Dropdown = self.dropdown(paginator=paginator)  # initialized dropdown
         self.add_item(self._init__dropdown)
         self.buttons = self.children.copy()

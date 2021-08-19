@@ -1,8 +1,9 @@
 import discord
+import pymongo.errors
 from discord.ext import commands
+
 from Utils.database import Database
 from Utils.variables import Models
-import pymongo.errors
 
 
 class System(commands.Cog):
@@ -11,8 +12,6 @@ class System(commands.Cog):
 
     @staticmethod
     async def add_guilds(bot: commands.Bot):
-        # TODO: Change this function to delete guilds db objects
-        #  that don't exist in the joined guilds of the bot
         """This function checks if a guild hasn't been added to the database yet
         """
         # a list of Guild ID's that have already been added
@@ -20,14 +19,11 @@ class System(commands.Cog):
 
         not_added_to_database: list[discord.Guild] = [guild for guild in bot.guilds if guild.id not in already_added]
         for guild in not_added_to_database:
-            document = Models.guild_document(guild.id)
-            Database.GUILDS.insert_one(document)
+            Database.GUILDS.insert_one(Models.guild_document(guild.id))
             print(f"Added: {guild.id}")
 
     @staticmethod
     async def remove_guilds(bot: commands.Bot):
-        # TODO: Change this function to delete guilds db objects
-        #  that don't exist in the joined guilds of the bot
         """This functions checks whether a guild in the database isn't a joined guild
         """
         # The exempted guilds that the bot shouldn't delete from the database

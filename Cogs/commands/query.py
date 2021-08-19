@@ -1,11 +1,12 @@
-from Utils import PaginationItem, PaginatorView, PageSource, Paginator, SelectOption, global_dict, Dropdown
-from Utils.errors import Error
-from discord.ext import commands
-import discord
 from typing import Any, Optional
-from Utils.wiki import QueryItem, Item
+
+import discord
+from discord.ext import commands
+
+from Utils import PaginationItem, PaginatorView, PageSource, Paginator, SelectOption, Dropdown
+from Utils.errors import Error
 from Utils.variables import Images, Models
-from textwrap import dedent
+from Utils.wiki import QueryItem, Item
 
 
 class Source(PageSource):

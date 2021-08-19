@@ -1,7 +1,9 @@
-from Utils import PaginationItem, PaginatorView, PageSource, Paginator, SelectOption, global_dict, Dropdown
-from discord.ext import commands
-import discord
 from typing import Any
+
+import discord
+from discord.ext import commands
+
+from Utils import PaginationItem, PaginatorView, PageSource, Paginator, SelectOption, Dropdown
 
 
 class Source(PageSource):

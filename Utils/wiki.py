@@ -1,13 +1,13 @@
-import pymongo.collection
-from discord.ext import menus
 from bson.objectid import ObjectId
-import discord
-from typing import Union, Optional
-from .database import Database, ItemNotFound
-import pymongo
-from pymongo.collation import Collation, CollationStrength
-from phonetics import metaphone
 import asyncio
+from typing import Optional
+
+import pymongo
+from bson.objectid import ObjectId
+from phonetics import metaphone
+from pymongo.collation import Collation, CollationStrength
+
+from .database import Database, ItemNotFound
 from .profiler_ import profile
 
 

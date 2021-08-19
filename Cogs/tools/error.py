@@ -1,8 +1,10 @@
-import traceback
 import sys
-from discord.ext import commands
-from Utils import errors
+import traceback
+
 import discord
+from discord.ext import commands
+
+from Utils import errors
 from Utils.variables import Models
 
 
@@ -51,7 +53,7 @@ class Error(commands.Cog):
             await ctx.send("> Invalid Arguments")
 
         if isinstance(error, commands.BotMissingPermissions):
-            missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_perms]
+            missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_permissions]
 
             if len(missing) > 2:
                 fmt = '{}, and {}'.format(", ".join(missing[:-1]), missing[-1])
@@ -61,7 +63,7 @@ class Error(commands.Cog):
             await ctx.send(f"> {message}")
 
         if isinstance(error, commands.MissingPermissions):
-            missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_perms]
+            missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_permissions]
 
             if len(missing) > 2:
                 fmt = '{}, and {}'.format(", ".join(missing[:-1]), missing[-1])

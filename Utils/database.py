@@ -1,10 +1,7 @@
 import os
-import discord
+
 import pymongo
 from pymongo import MongoClient
-import ssl
-import inspect
-import pickle
 
 global_dict = {}
 
