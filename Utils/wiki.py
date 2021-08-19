@@ -349,12 +349,12 @@ class QueryItem:
             }
              },
             {'$match': {'rank': {'$gt': 0}}},  # TODO: Verify if this should be added
-            {'$sort': {'rank': -1}}
+            {'$sort': {'rank': -1, 'name': 1}}  # TODO: Verify Alphabetical Sort
         ]
 
         pipeline_2 = [
             {'$match': {'$text': {'$search': word}}},  # search
-            {'$sort': {'score': {'$meta': "textScore"}}}
+            {'$sort': {'score': {'$meta': "textScore", 'name': 1}}}  # TODO: Verify Alphabetical Sort
         ]
         """The `rank` field is an integer that is derived from the size of the intersected array of word.lower().split() 
         and the $name.lower().split()
@@ -379,7 +379,7 @@ class QueryItem:
             }
             },
             {'$match': {'rank': {'$gt': 0}}},  # TODO: Verify if this should be added
-            {'$sort': {'rank': -1}}
+            {'$sort': {'rank': -1, 'name': 1}}  # TODO: Verify Alphabetical Sort
         ]
         """`rank` is an integer that is derived from the size of the intersected array of `grams` and $index.grams
         """
