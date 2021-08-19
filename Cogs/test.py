@@ -31,6 +31,7 @@ class Test(commands.Cog):
         self.bot: commands.Bot = bot
 
     @commands.command(name='test')
+    @commands.is_owner()
     async def raw_test(self, ctx: commands.Context):
         def options(paginator: Paginator) -> list[SelectOption]:
             options = [SelectOption(label=item.name) for item in paginator.source.get_page(paginator.current_page)]

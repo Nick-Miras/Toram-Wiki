@@ -45,6 +45,7 @@ class PaginationItem:
 
 
 class Paginator:
+    initialized = False
 
     def __init__(self, source):
         self._source: PageSource = source
@@ -135,7 +136,7 @@ class Paginator:
         self.current_page += 1
         return asyncio.run(self.show_page(current_page))  # TODO: Find a way to remove this asyncio run
 
-    def __getitem__(self, item):  # basically the same as `source.open_child`
+    def __getitem__(self, item):  # basically the same as `source.get_child`
         return self.source.get_child(self.source.get_page(self.current_page), item)
 
 
@@ -216,6 +217,8 @@ class PageSource:
 
 
 class Dropdown(Select):
+    initialized = False
+
     def __init__(self, *, paginator, **kwargs):
         self.paginator = paginator
         self.initialized = True
@@ -250,7 +253,6 @@ class PaginatorView(discord.ui.View):
     """
     # TODO: Make buttons more customizable
     def __init__(self, ctx, *, paginator: Paginator, dropdown: Type[Dropdown], timeout=None):
-        # TODO: Create proper type hint for :param dropdown:
         """
         IMPORTANT NOTE: Paginator must be initialized and Dropdown must not be initialized!
         """
@@ -259,9 +261,9 @@ class PaginatorView(discord.ui.View):
         if not isinstance(paginator, Paginator):
             raise TypeError(f'Expected {Paginator} not {paginator.__class__}')
 
-        if not hasattr(paginator, 'initialized'):
-            raise Exception('Paginator is not initialized!')
-        if hasattr(dropdown, 'initialized'):
+        if paginator.initialized is False:
+            raise Exception('Paginator must be initialized!')
+        if dropdown.initialized is True:
             raise Exception('Dropdown must not be initialized!')
 
         self.ctx: commands.Context = ctx

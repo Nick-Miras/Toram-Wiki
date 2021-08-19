@@ -1,3 +1,4 @@
+import re
 from typing import Any, Optional
 
 import discord
@@ -36,13 +37,15 @@ class QueryDropdown(Dropdown):
     @staticmethod
     def get_options(paginator) -> list[SelectOption]:
         # TODO: enumerate items with numbers
-        labels = []
-        options = [SelectOption(label=item.name) for item in paginator.source.get_page(paginator.current_page)]
+        source = paginator.source
+        offset = paginator.current_page * source.per_page
+        options = [SelectOption(label=f'{num}. {item.name}') for num, item in enumerate(source.get_page(paginator.current_page), start=offset + 1)]
         return options
 
     async def display(self) -> Any:
         paginator = self.paginator
-        item: ItemPagination = paginator[self.values[0]]
+        item_name = re.sub(r'\d+\.\s', '', self.values[0])
+        item: ItemPagination = paginator[item_name]
         return await item.display()
 
 
@@ -88,8 +91,7 @@ class Query(commands.Cog):
             embed = Models.error_embed('Item Not Found!')
             raise Error(embed, embed=True)
 
-        items: list[Item] = cls._process_results(results)
-        if len(items) == 1:
+        if len(items := cls._process_results(results)) == 1:  # type: list[Item]
             embed = await cls.display_as_embed(items[0])
             return {'embed': embed}
         else:
