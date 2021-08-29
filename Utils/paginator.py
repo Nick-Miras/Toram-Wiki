@@ -1,5 +1,3 @@
-from . import ui
-import discord
 import asyncio
 import time
 from typing import Any, Optional, Type
@@ -251,6 +249,7 @@ class Dropdown(Select):
 class PaginatorView(discord.ui.View):
     """Implements the Paginator
     """
+
     # TODO: Make buttons more customizable
     def __init__(self, ctx, *, paginator: Paginator, dropdown: Type[Dropdown], timeout=None):
         """

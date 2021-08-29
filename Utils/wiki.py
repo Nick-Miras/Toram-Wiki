@@ -1,4 +1,3 @@
-from bson.objectid import ObjectId
 import asyncio
 from typing import Optional
 
@@ -21,7 +20,7 @@ class Grams:
     @staticmethod
     def gram(string, n: int):
         for i in range(n, len(string) + 1):
-            yield string[i-n: i].lower()
+            yield string[i - n: i].lower()
 
     @classmethod
     def trigram(cls, string):  # generator
@@ -141,12 +140,14 @@ class Category(WikiObject):
         -------
         List of Database Documents of Children
         """
+
         def find_children():
             if children := list(Database.CATEGORIES.find({'parent': object_id})):
                 return children
             if children := list(Database.ITEMS.find({'parent': object_id})):
                 return children
             raise NoChildren()
+
         return find_children()
 
     @property
@@ -224,7 +225,8 @@ class Item(WikiObject):
             location=None,
             note=None,
             index=None,
-            image=None
+            image=None,
+            stats=None
     ):
         super().__init__(object_id, name)
         self.parent = parent
@@ -233,6 +235,7 @@ class Item(WikiObject):
         self.note = note
         self.index = index
         self.image = image
+        self.stats = stats
 
     @property
     def index(self) -> dict:
@@ -292,12 +295,22 @@ class Item(WikiObject):
             link = None
         self._image = link
 
+    @property
+    def stats(self):
+        return self._stats
+
+    @stats.setter
+    def stats(self, stats: dict):
+        if not stats:
+            stats = {}
+        self._stats = stats
+
     @classmethod
     def from_dict(cls, data: dict):
         if not isinstance(data, dict):
             raise TypeError(f'{data.__class__} is not of the type {dict}')
 
-        __slots = ['_id', 'name', 'type', 'parent', 'location', 'note', 'index', 'image']
+        __slots = ['_id', 'name', 'type', 'parent', 'location', 'note', 'index', 'image', 'stats']
         if all(key in data for key in __slots) is False:
             raise Exception('Missing keys in document')
 
@@ -309,6 +322,7 @@ class Item(WikiObject):
         self.item_type = data.get('type', Empty)
         self.location = data.get('location', None)
         self.note = data.get('note', None)
+        self.stats = data.get('stats', {})
         self.index = data.get('index', {})
         self.image = data.get('image', None)
 
@@ -322,6 +336,7 @@ class QueryItem:
         Ranking Results by the number of matches
         https://stackoverflow.com/questions/12405837/in-mongodb-search-in-an-array-and-sort-by-number-of-matches
     """
+
     def __init__(self, item_name: str):
         assert isinstance(item_name, str)
         self.item_name = item_name
@@ -340,14 +355,15 @@ class QueryItem:
             {'$addFields': {'rank': {  # TODO: Verify if the Round and Divide Operators are required
                 '$round': [
                     {'$divide': [
-                        {'$size': {'$setIntersection': [word.lower().split(), {'$split': [{'$toLower': '$name'}, ' ']}]}},
+                        {'$size': {
+                            '$setIntersection': [word.lower().split(), {'$split': [{'$toLower': '$name'}, ' ']}]}},
                         {'$size': {'$split': [{'$toLower': '$name'}, ' ']}}
                     ]},
                     2
                 ]
             }
             }
-             },
+            },
             {'$match': {'rank': {'$gt': 0}}},  # TODO: Verify if this should be added
             {'$sort': {'rank': -1, 'name': 1}}  # TODO: Verify Alphabetical Sort
         ]
@@ -428,6 +444,3 @@ class QueryItem:
     def query_to_item(results: list[dict]):  # generator
         for item in results:
             yield Item.from_dict(item)
-
-
-

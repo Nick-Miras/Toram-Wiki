@@ -70,7 +70,8 @@ async def on_message(message: discord.Message):
         if cnt and message.author.bot is False and len(cnt) == 1:
             if re.match(f'<@!?{bot.user.id}>', cnt[0]):
                 prefix = await bot.get_prefix(message)
-                embed = discord.Embed(description=f"Hello {message.author.mention}!\n`{prefix[2]}help` for more information")
+                embed = discord.Embed(
+                    description=f"Hello {message.author.mention}!\n`{prefix[2]}help` for more information")
                 await message.channel.send(embed=embed)
     await bot.process_commands(message)
 

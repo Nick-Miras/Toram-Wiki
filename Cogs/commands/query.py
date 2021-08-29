@@ -36,10 +36,10 @@ class ItemPagination(PaginationItem):
 class QueryDropdown(Dropdown):
     @staticmethod
     def get_options(paginator) -> list[SelectOption]:
-        # TODO: enumerate items with numbers
         source = paginator.source
         offset = paginator.current_page * source.per_page
-        options = [SelectOption(label=f'{num}. {item.name}') for num, item in enumerate(source.get_page(paginator.current_page), start=offset + 1)]
+        options = [SelectOption(label=f'{num}. {item.name}') for num, item in
+                   enumerate(source.get_page(paginator.current_page), start=offset + 1)]
         return options
 
     async def display(self) -> Any:
@@ -61,6 +61,11 @@ class Query(commands.Cog):
         embed.set_author(name=item.name, icon_url=Images.scroll)
         if image := item.image:
             embed.set_thumbnail(url=image)
+        if stats := item.stats:
+            _string = '**Stat\\Effect:**\n'
+            for key, value in stats.items():
+                _string += f' {key} **{value}**\n'
+            embed.add_field(name='Stats:', value=_string, inline=False)
         if note := item.note:
             embed.add_field(name="Description:", value=note, inline=False)
         if location := item.location:
@@ -80,6 +85,7 @@ class Query(commands.Cog):
     def _process_items(items: list[Item]) -> list[ItemPagination]:
         def mapper(item: Item):
             return ItemPagination(item.name, item)
+
         return list(map(mapper, items))
 
     @classmethod

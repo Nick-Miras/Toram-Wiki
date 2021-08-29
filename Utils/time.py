@@ -68,7 +68,8 @@ class TimeProxy:
         return len(self.__dict__)
 
     def __repr__(self):
-        return 'EmbedProxy(%s)' % ', '.join(('%s=%r' % (k, v) for k, v in self.__dict__.items() if not k.startswith('_')))
+        return 'EmbedProxy(%s)' % ', '.join(
+            ('%s=%r' % (k, v) for k, v in self.__dict__.items() if not k.startswith('_')))
 
     def __getattr__(self, attr):
         return Empty
@@ -85,6 +86,7 @@ class ToTime:
     """
 
     __slots__ = ('type', '_time', '_timezone', '_local', '_utc', '_to_timezone')
+
     # is localized attr is not added since we won't ever use it
 
     def __init__(self, *, time: Union[str, datetime], timezone='UTC', to_timezone='UTC'):
