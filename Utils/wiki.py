@@ -370,7 +370,7 @@ class QueryItem:
 
         pipeline_2 = [
             {'$match': {'$text': {'$search': word}}},  # search
-            {'$sort': {'score': {'$meta': "textScore", 'name': 1}}}  # TODO: Verify Alphabetical Sort
+            {'$sort': {'score': {'$meta': "textScore"}, 'name': 1}}  # TODO: Verify Alphabetical Sort
         ]
         """The `rank` field is an integer that is derived from the size of the intersected array of word.lower().split() 
         and the $name.lower().split()
