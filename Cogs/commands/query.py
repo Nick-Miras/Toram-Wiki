@@ -61,12 +61,11 @@ class Query(commands.Cog):
         embed.set_author(name=item.name, icon_url=Images.scroll)
         if image := item.image:
             embed.set_thumbnail(url=image)
-        if stats := item.stats:
-            import textwrap
+        if stats := item.stats:  # TODO: Decide whether to Indent
             _string = ''
             for key, value in stats.items():
                 _string += f'{key} **{value}**\n'
-            embed.add_field(name='Stats:', value=textwrap.indent(_string, ' '), inline=False)
+            embed.add_field(name='Stats:', value=_string, inline=False)
         if note := item.note:
             embed.add_field(name="Description:", value=note, inline=False)
         if location := item.location:
