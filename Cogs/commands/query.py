@@ -62,7 +62,7 @@ class Query(commands.Cog):
         if image := item.image:
             embed.set_thumbnail(url=image)
         if stats := item.stats:
-            _string = '**Stat/Effect:**\n'
+            _string = ''
             for key, value in stats.items():
                 _string += f' {key} **{value}**\n'
             embed.add_field(name='Stats:', value=_string, inline=False)
