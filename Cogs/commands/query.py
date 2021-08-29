@@ -62,10 +62,11 @@ class Query(commands.Cog):
         if image := item.image:
             embed.set_thumbnail(url=image)
         if stats := item.stats:
+            import textwrap
             _string = ''
             for key, value in stats.items():
-                _string += f' {key} **{value}**\n'
-            embed.add_field(name='Stats:', value=_string, inline=False)
+                _string += f'{key} **{value}**\n'
+            embed.add_field(name='Stats:', value=textwrap.indent(_string, ' '), inline=False)
         if note := item.note:
             embed.add_field(name="Description:", value=note, inline=False)
         if location := item.location:
