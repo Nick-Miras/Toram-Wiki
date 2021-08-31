@@ -252,6 +252,7 @@ class Item(WikiObject):
             index = {
                 'phonetic': metaphone(self.name),
                 'ngrams': list(Grams.ngrams(self.name)),
+                'trigram': list(Grams.trigram(self.name))
             }
         self._index = index
 
