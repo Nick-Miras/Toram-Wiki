@@ -1,4 +1,5 @@
 import asyncio
+from collections import OrderedDict
 from typing import Optional
 
 import pymongo
@@ -106,8 +107,13 @@ class WikiObject:
         self._parent = value
 
     def to_dict(self) -> dict:
+        properties = ['name', 'parent']
+
         def clean(key):
-            return key.replace('_', ' ')
+            key = key.replace('_', ' ').strip()
+            if key == 'object id':
+                return '_id'
+            return key
 
         def replace(value):
             return '' if value is None else value
@@ -115,11 +121,16 @@ class WikiObject:
         data = {
             clean(key): replace(value)
             for key, value in self.__dict__.items()
-            if not key.startswith('__')
+            if key in ['object_id', *properties]
         }
-        return data
 
-    async def add_to_database(self, collection: pymongo.collection.Collection):
+        key_order = {k: v for v, k in enumerate(['_id', *properties])}
+
+        return dict(OrderedDict(sorted(data.items(), key=lambda i: key_order.get(i[0]))))
+
+    def add_to_database(self, collection: pymongo.collection.Collection):
+        if not isinstance(collection, pymongo.collection.Collection):
+            raise TypeError(f'Expected {pymongo.collection.Collection} not {collection.__class__}')
         data = self.to_dict()
         collection.insert_one(data)
 
@@ -233,9 +244,9 @@ class Item(WikiObject):
         self.item_type = item_type
         self.location = location
         self.note = note
-        self.index = index
+        self.index: dict = index
         self.image = image
-        self.stats = stats
+        self.stats: list = stats
 
     @property
     def index(self) -> dict:
@@ -297,13 +308,19 @@ class Item(WikiObject):
         self._image = link
 
     @property
-    def stats(self):
+    def stats(self) -> list:
         return self._stats
 
     @stats.setter
-    def stats(self, stats: dict):
+    def stats(self, stats: list):
+        """
+        Returns
+        -------
+        `class`:`list`
+            Example: {'attr': something, 'value': something}
+        """
         if not stats:
-            stats = {}
+            stats = []
         self._stats = stats
 
     @classmethod
@@ -323,11 +340,35 @@ class Item(WikiObject):
         self.item_type = data.get('type', Empty)
         self.location = data.get('location', None)
         self.note = data.get('note', None)
-        self.stats = data.get('stats', {})
+        self.stats = data.get('stats', [])
         self.index = data.get('index', {})
         self.image = data.get('image', None)
 
         return self
+
+    def to_dict(self) -> dict:  # TODO: Clean this up
+        properties = ['name', 'parent', 'type', 'stats', 'note', 'location', 'image', 'index']
+
+        def clean(key):
+            key = key.replace('_', ' ').strip()
+            if key == 'object id':
+                return '_id'
+            if key == 'item type':
+                return 'type'
+            return key
+
+        def replace(value):
+            return '' if value is None else value
+
+        data = {
+            clean(key): replace(value)
+            for key, value in self.__dict__.items()
+            if key in ['object_id', 'item type', *properties]
+        }
+
+        key_order = {k: v for v, k in enumerate(['_id', *properties])}
+
+        return dict(OrderedDict(sorted(data.items(), key=lambda i: key_order.get(i[0]))))
 
 
 class QueryItem:
