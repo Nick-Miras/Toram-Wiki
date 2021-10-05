@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Any, Optional, Type
+from typing import Any, Optional, Type, Generator
 
 import discord
 from discord import Interaction, ButtonStyle, SelectOption
@@ -11,7 +11,7 @@ from . import database
 from . import ui
 
 
-def return_kwargs(value):
+def return_kwargs(value) -> Optional[dict[str, Any]]:
     if isinstance(value, str):
         return {'content': value, 'embed': None}
     if isinstance(value, discord.Embed):
@@ -19,7 +19,7 @@ def return_kwargs(value):
     return
 
 
-class PaginationItem:
+class PaginationItem:  # TODO: TURN INTO PYDANTIC DATACLASS
     def __init__(self, name, item: Any = None):
         # TODO: Decide whether to have NoneType as the default value of :param item:
         self.name = str(name)
@@ -109,7 +109,7 @@ class Paginator:
         return return_kwargs(value)
 
     async def show_page(self, page_number) -> dict:
-        """IMPORTANT NOTE: This is only used for displaying the page(front end)
+        """IMPORTANT NOTE: This is only uses displaying the page(front end)
         and this doesn't involve anything with backend manipulation
         """
         page = self.source.get_page(page_number)
@@ -181,12 +181,10 @@ class PageSource:
         If :attr:`per_page` is set to ``1`` then this returns a list that contains only a single
         element. Otherwise it returns at most :attr:`per_page` elements.
         """
-        if page_number < 1:
+        if page_number < 1:  # just in case the page number becomes a negative number
             page_number = 0
         elif page_number >= self.max_pages:
             page_number = self.max_pages - 1
-        else:
-            page_number = page_number
 
         if self.per_page == 1:
             return [self.data[page_number]]
@@ -195,7 +193,7 @@ class PageSource:
             return self.data[base:base + self.per_page]
 
     @staticmethod
-    def page_to_dictionary(page: list[PaginationItem]) -> dict:
+    def page_to_dictionary(page: list[PaginationItem]) -> Generator[dict, None, None]:
         for item in page:
             yield item.to_dict()
 
@@ -350,8 +348,6 @@ class PaginatorView(discord.ui.View):
         await self.update_select_buttons(kwargs, interaction)
 
     async def update_select_buttons(self, kwargs, interaction: discord.Interaction):
-        """Updates the Select Button Options
-        """
         paginator_view = PaginatorView(
             self.ctx, paginator=self.paginator, dropdown=self.dropdown, timeout=self.timeout
         )  # reinitializes the Paginator

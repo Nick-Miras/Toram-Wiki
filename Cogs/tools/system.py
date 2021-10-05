@@ -27,7 +27,7 @@ class System(commands.Cog):
         """This functions checks whether a guild in the database isn't a joined guild
         """
         # The exempted guilds that the bot shouldn't delete from the database
-        exempted_guilds = (426956449860812818, 846204712796553246,)
+        exempted_guilds = [guild['_id'] for guild in Database.GUILDS.find({'exempted': True})]
         added: list[int] = [guild['_id'] for guild in Database.GUILDS.find()]
 
         # current joined guilds of the bot
@@ -55,8 +55,8 @@ class System(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.add_guilds(self.bot)
         await self.remove_guilds(self.bot)
+        await self.add_guilds(self.bot)
 
 
 def setup(bot):

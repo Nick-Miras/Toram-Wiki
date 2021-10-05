@@ -1,14 +1,27 @@
 import asyncio
-from collections import OrderedDict
-from typing import Optional
+from enum import Enum
+from typing import Optional, Generator, Union, Any, Callable, TypedDict
 
 import pymongo
 from bson.objectid import ObjectId
 from phonetics import metaphone
+from pydantic.fields import ModelField
 from pymongo.collation import Collation, CollationStrength
 
 from .database import Database, ItemNotFound
 from .profiler_ import profile
+
+from pydantic import Field, validator, root_validator, ValidationError, PrivateAttr, BaseConfig, HttpUrl, Extra
+from pydantic import BaseModel as PydanticBaseModel
+
+
+def get_exception_from(func: Callable, args) -> Optional[Exception]:
+    try:
+        func(*args)
+    except Exception as exc:
+        return exc
+    else:
+        return
 
 
 class Grams:
@@ -50,166 +63,21 @@ class InvalidCategory(WikiException):
         super().__init__(f'{category} is not a valid category.')
 
 
-class WikiObject:
-    def __init__(self, object_id: ObjectId, name: str):
-        self.object_id: ObjectId = object_id
-        self.name: str = name
-        self._parent = None
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        if not value:
-            raise TypeError(f'{value} cannot be empty')
-        self._name = value
-
-    @property
-    def object_id(self):
-        return self._object_id
-
-    @object_id.setter
-    def object_id(self, value):
-        if not value:
-            raise TypeError(f'{value} cannot be empty')
-        self._object_id = value
-
-    @staticmethod
-    def get_parent(object_id: ObjectId) -> dict:
-        """
-
-        Returns
-        -------
-        Database Document of Parent
-        """
-        if not (parent := Database.CATEGORIES.find_one({'_id': object_id})['parent']):
-            raise NoParent()
-        return Database.CATEGORIES.find_one({'_id': parent})  # returns database document
-
-    @property
-    def parent(self) -> ObjectId:
-        parent = self._parent
-        if not parent:
-            try:
-                parent = self.get_parent(self.object_id)
-            except NoParent:
-                parent = ''
-        if not isinstance(parent, ObjectId) and parent != '':
-            raise TypeError(f'{parent.__class__} is not of the type {ObjectId}')
-        if Database.exists(Database.CATEGORIES, {'_id': parent}) is False:  # verifies if parent is valid
-            raise ItemNotFound(parent)
-        return parent
-
-    @parent.setter
-    def parent(self, value):  # TODO: Decide whether to add this as an __init__ argument
-        self._parent = value
-
-    def to_dict(self) -> dict:
-        properties = ['name', 'parent']
-
-        def clean(key):
-            key = key.replace('_', ' ').strip()
-            if key == 'object id':
-                return '_id'
-            return key
-
-        def replace(value):
-            return '' if value is None else value
-
-        data = {
-            clean(key): replace(value)
-            for key, value in self.__dict__.items()
-            if key in ['object_id', *properties]
-        }
-
-        key_order = {k: v for v, k in enumerate(['_id', *properties])}
-
-        return dict(OrderedDict(sorted(data.items(), key=lambda i: key_order.get(i[0]))))
-
-    def add_to_database(self, collection: pymongo.collection.Collection):
-        if not isinstance(collection, pymongo.collection.Collection):
-            raise TypeError(f'Expected {pymongo.collection.Collection} not {collection.__class__}')
-        data = self.to_dict()
-        collection.insert_one(data)
+class IterableException(Exception):
+    pass
 
 
-class Category(WikiObject):
-
-    def __init__(self, object_id: ObjectId, name: str, category: str, parent: ObjectId = None):
-
-        super().__init__(object_id, name)
-        self.category = category
-        self.parent = parent
-        self._children = None
-
-    @staticmethod
-    def get_children(object_id: ObjectId) -> list[dict]:
-        """
-        Returns
-        -------
-        List of Database Documents of Children
-        """
-
-        def find_children():
-            if children := list(Database.CATEGORIES.find({'parent': object_id})):
-                return children
-            if children := list(Database.ITEMS.find({'parent': object_id})):
-                return children
-            raise NoChildren()
-
-        return find_children()
-
-    @property
-    def children(self):
-        """
-        Returns
-        -------
-        :class:`list[Category]`
-            returns a list of Category Objects
-        """
-        children = self._children
-        if children:
-            return children
-        if children is None:
-            children: list[dict] = self.get_children(self.object_id)
-            self._children: list[Category] = [self.from_dict(child) for child in children]
-            return self._children
-
-    @property
-    def category(self):
-        return self._category
-
-    @category.setter
-    def category(self, value):
-        if value not in ['category', 'item']:
-            raise InvalidCategory()
-
-        self._category = value
-
-    @classmethod
-    @profile
-    def from_dict(cls, data: dict):
-        if not isinstance(data, dict):
-            raise TypeError(f'{data.__class__} is not of the type {dict}')
-
-        __slots = ['_id', 'name', 'parent']
-        if all(key in data for key in __slots) is False:
-            raise Exception('Missing keys in document')
-
-        self: cls = cls.__new__(cls)
-
-        self.object_id = data.get('_id', Empty)
-        self.name = data.get('name', Empty)
-        self.parent = data.get('parent', Empty)
-
-        if 'type' in data:
-            self.category = 'item'
+class MissingKeys(IterableException):
+    def __init__(self, keys: list[str] = None):
+        if keys:
+            super().__init__(f'MISSING KEYS: {keys}')
         else:
-            self.category = 'category'
+            super().__init__(f'MISSING KEYS')
 
-        return self
+
+class UnIdenticalElements(IterableException):
+    def __init__(self, set1, set2):
+        super().__init__(f'{set1} | {set2}: are not the same!')
 
 
 class EmptySlot:
@@ -226,149 +94,196 @@ class EmptySlot:
 Empty = EmptySlot()
 
 
-class Item(WikiObject):
-    def __init__(
-            self,
-            object_id: ObjectId,
-            name: str,
-            item_type,
-            parent: ObjectId = None,
-            location=None,
-            note=None,
-            index=None,
-            image=None,
-            stats=None
-    ):
-        super().__init__(object_id, name)
-        self.parent = parent
-        self.item_type = item_type
-        self.location = location
-        self.note = note
-        self.index: dict = index
-        self.image = image
-        self.stats: list = stats
+class PydanticObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
 
-    @property
-    def index(self) -> dict:
-        return self._index
+    @classmethod
+    def validate(cls, v):
+        if not isinstance(v, ObjectId):
+            raise TypeError('ObjectId required')
+        return str(v)
 
-    @index.setter
-    def index(self, index: dict):
-        if not index:
-            index = {}
-        if not isinstance(index, dict):
-            raise TypeError(f'{index} is not type:`dict`')
-        if not index:  # if the dictionary is empty
-            # TODO: Decide whether to use a list of dictionaries instead of only using a single dictionary
-            index = {
-                'phonetic': metaphone(self.name),
-                'ngrams': list(Grams.ngrams(self.name)),
-                'trigram': list(Grams.trigram(self.name))
-            }
-        self._index = index
 
-    @property
-    def item_type(self):
-        return self._item_type
+class EmptyString(Enum):
+    EMPTYSTRING = ''
 
-    @item_type.setter
-    def item_type(self, value):  # TODO: Add authentication for :param: value
-        if not value:
-            raise TypeError(f'{value} cannot be empty')
-        self._item_type = value
 
-    @property
-    def location(self):
-        return self._location
+class NamesDict(TypedDict):
+    display: str
+    raw: str
 
-    @location.setter
-    def location(self, value):
-        if not value:
-            value = None
-        self._location = value
 
-    @property
-    def note(self):
-        return self._note
+class ParentsDict(TypedDict):
+    category: ObjectId
+    item: Union[ObjectId, EmptyString]
 
-    @note.setter
-    def note(self, value):
-        if not value:
-            value = None
-        self._note = value
 
-    @property
-    def image(self):
-        return self._image
+class IndexDict(TypedDict, total=False):
+    phonetic: str
+    ngrams: list[str]
+    trigram: list[str]
 
-    @image.setter
-    def image(self, link: str):
-        if not link:
-            link = None
-        self._image = link
 
-    @property
-    def stats(self) -> list:
-        return self._stats
+class WikiConfig(BaseConfig):
+    allow_population_by_field_name = True
+    arbitrary_types_allowed = True
+    extra = Extra.forbid
 
-    @stats.setter
-    def stats(self, stats: list):
-        """
-        Returns
-        -------
-        `class`:`list`
-            Example: {'attr': something, 'value': something}
-        """
-        if not stats:
-            stats = []
-        self._stats = stats
+
+class WikiObject(PydanticBaseModel):
+    object_id: ObjectId = Field(alias='_id')
+
+    def to_dict(self) -> dict:
+        return self.dict(by_alias=True)
 
     @classmethod
     def from_dict(cls, data: dict):
-        if not isinstance(data, dict):
-            raise TypeError(f'{data.__class__} is not of the type {dict}')
+        return cls.parse_obj(data)
 
-        __slots = ['_id', 'name', 'type', 'parent', 'location', 'note', 'index', 'image', 'stats']
-        if all(key in data for key in __slots) is False:
-            raise Exception('Missing keys in document')
+    def add_to_database(self, collection: pymongo.collection.Collection):
+        if not isinstance(collection, pymongo.collection.Collection):
+            raise TypeError(f'Expected {pymongo.collection.Collection} not {collection.__class__}')
 
-        self: cls = cls.__new__(cls)
+        if not (data := self.to_dict()):
+            return
 
-        self.object_id = data.get('_id', Empty)
-        self.name = data.get('name', Empty)
-        self.parent = data.get('parent', None)
-        self.item_type = data.get('type', Empty)
-        self.location = data.get('location', None)
-        self.note = data.get('note', None)
-        self.stats = data.get('stats', [])
-        self.index = data.get('index', {})
-        self.image = data.get('image', None)
+        collection.insert_one(data)
 
-        return self
+    class Config(WikiConfig):
+        pass
 
-    def to_dict(self) -> dict:  # TODO: Clean this up
-        properties = ['name', 'parent', 'type', 'stats', 'note', 'location', 'image', 'index']
 
-        def clean(key):
-            key = key.replace('_', ' ').strip()
-            if key == 'object id':
-                return '_id'
-            if key == 'item type':
-                return 'type'
-            return key
+class Category(WikiObject):
+    name: str
+    parent: ObjectId = ''
+    _children: list['Category'] = PrivateAttr()
 
-        def replace(value):
-            return '' if value is None else value
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._children = self.get_children_from(object_id=self.object_id)
 
-        data = {
-            clean(key): replace(value)
-            for key, value in self.__dict__.items()
-            if key in ['object_id', 'item type', *properties]
+    @validator('parent')
+    def parent_validator(cls, input_value, values):
+        if not (parent := input_value):
+            try:
+                parent = cls.get_parent_category(values['type'])
+            except NoParent:
+                return ''
+        if not isinstance(parent, ObjectId):
+            raise TypeError(f'{parent.__class__} is not of the type {ObjectId}')
+        if Database.exists(Database.CATEGORIES, {'_id': parent}) is False:  # verifies if parent is valid
+            raise ItemNotFound(parent)
+        return parent
+
+    def get_children_from(self, object_id) -> list['Category']:
+        """
+        Returns
+        -------
+        List of Database Documents of Children
+        """
+        def find_children() -> list[dict]:
+            if children := list(Database.CATEGORIES.find({'parent': object_id})):
+                return children
+            if children := list(Database.ITEMS.find({'parent': object_id})):
+                return children
+            raise NoChildren()
+
+        children: list[Category] = [self.from_dict(child) for child in find_children()]
+        return children
+
+    @staticmethod
+    def get_parent_category(object_id: ObjectId) -> dict:
+        """This fetches the parent document of a category, which is also a category
+
+        Returns
+        -------
+        Database Document of Parent Category
+        """
+        if not Database.exists(Database.CATEGORIES, {'_id': object_id}):
+            raise ItemNotFound(ObjectId)
+        if not (parent := Database.CATEGORIES.find_one({'_id': object_id})['parent']):
+            raise NoParent()
+        return Database.CATEGORIES.find_one({'_id': parent})  # returns database document
+
+
+class Item(WikiObject):
+    names: NamesDict
+    parents: ParentsDict
+    item_type: str = Field(..., alias='type')
+
+    market_value: dict = {}
+    stats: dict = {}
+    note: str = ''
+    location: list[dict] = []
+    recipe: dict = {}
+    uses: list[dict] = []
+    image: Union[HttpUrl, EmptyString] = ''
+    index: IndexDict = {}
+
+    def __eq__(self, other: 'Item'):
+        return self.object_id == other.object_id
+
+    def __lt__(self, other: 'Item'):
+        return self.names['display'] < other.names['display']
+
+    def __gt__(self, other: 'Item'):
+        return self.names['display'] > other.names['display']
+
+    @validator('*', pre=True)
+    def set_value_of_empty_fields_to_be_their_types(
+            cls, value, values: dict[str, Any], field: ModelField, config: BaseConfig
+    ):
+        if field.default is None:  # if the field is required
+            return value
+
+        for validator_ in field.validators:
+            if get_exception_from(validator_, (cls, value, values, field, config)):
+                value = field.default
+
+        return value
+
+    @validator('names')
+    def check_if_names_are_valid(cls, input_value):  # TODO: REMOVE
+        names = {
+            'display': '',
+            'raw': ''
         }
+        if any(key not in input_value for key in names.keys()) is True:
+            raise MissingKeys([key for key in names.keys() if key not in input_value])
+        return input_value
 
-        key_order = {k: v for v, k in enumerate(['_id', *properties])}
+    @validator('parents')
+    def check_if_parents_are_valid(cls, input_value: dict):  # TODO: REMOVE
+        parents = {
+            'category': '',
+            'item': ''
+        }
+        if any(key not in input_value for key in parents.keys()) is True:
+            raise MissingKeys([key for key in parents.keys() if key not in input_value])
+        return input_value
 
-        return dict(OrderedDict(sorted(data.items(), key=lambda i: key_order.get(i[0]))))
+    @validator('index')
+    def check_if_index_is_valid(cls, input_value: dict, values):
+        index = {
+            'phonetic': metaphone(values['names']['display']),
+            'ngrams': list(Grams.ngrams(values['names']['display'])),
+            'trigram': list(Grams.trigram(values['names']['display']))
+        }
+        if not input_value:  # if empty
+            input_value = index
+        if set(input_value) != set(index):
+            def get_keys(dct: dict) -> list[str]:
+                return list(dct.keys())
+            raise UnIdenticalElements(get_keys(input_value), get_keys(index))
+
+        return input_value
+
+    class Config(WikiConfig):
+        allow_mutation = False
+        alias_generator = lambda string: string.replace('_', ' ')
+        use_enum_values = True
 
 
 class QueryItem:
@@ -380,7 +295,6 @@ class QueryItem:
     """
 
     def __init__(self, item_name: str):
-        assert isinstance(item_name, str)
         self.item_name = item_name
 
     @staticmethod
@@ -406,13 +320,13 @@ class QueryItem:
             }
             }
             },
-            {'$match': {'rank': {'$gt': 0}}},  # TODO: Verify if this should be added
-            {'$sort': {'rank': -1, 'name': 1}}  # TODO: Verify Alphabetical Sort
+            {'$match': {'rank': {'$gt': 0}}},
+            {'$sort': {'rank': -1, 'names.display': 1}}
         ]
 
         pipeline_2 = [
             {'$match': {'$text': {'$search': word}}},  # search
-            {'$sort': {'score': {'$meta': "textScore"}, 'name': 1}}  # TODO: Verify Alphabetical Sort
+            {'$sort': {'score': {'$meta': "textScore"}, 'names.display': 1}}
         ]
         """The `rank` field is an integer that is derived from the size of the intersected array of word.lower().split() 
         and the $name.lower().split()
@@ -436,14 +350,14 @@ class QueryItem:
             }
             }
             },
-            {'$match': {'rank': {'$gt': 0}}},  # TODO: Verify if this should be added
-            {'$sort': {'rank': -1, 'name': 1}}  # TODO: Verify Alphabetical Sort
+            {'$match': {'rank': {'$gt': 0}}},
+            {'$sort': {'rank': -1, 'names.display': 1}}
         ]
         """`rank` is an integer that is derived from the size of the intersected array of `grams` and $index.grams
         """
         return list(Database.ITEMS.aggregate(pipeline))
 
-    async def _results(self) -> tuple[list, str]:  # generator
+    async def _results(self) -> Generator[tuple[list, str], None, None]:  # generator
         """Runs all three query generators together. 
         Not minding if the item has already been found in higher rank search engines.
         """  # probably not going to use this
@@ -461,7 +375,7 @@ class QueryItem:
         for task in done:
             yield task.result()
 
-    async def output(self) -> Optional[list[dict]]:
+    async def get_results(self) -> Optional[list[dict]]:
         """Either returns an list of match\s
         """
         # TODO: Create Collection Collation first before trying anything
@@ -469,7 +383,7 @@ class QueryItem:
 
         item_name = self.item_name
         collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
-        if exact_match := list(Database.ITEMS.find({'name': item_name}).collation(collation)):
+        if exact_match := list(Database.ITEMS.find({'names.display': item_name}).collation(collation)):
             return exact_match  # should return an array of the size of 1
         if phrase_match := list(Database.ITEMS.find({'$text': {'$search': f'\"{item_name}\"'}})):
             return phrase_match
@@ -480,7 +394,14 @@ class QueryItem:
             return text_search_match
         if ngrams_match := await self._query_ngrams(item_name):
             return ngrams_match
-        return
+        return  # TODO: RAISE EXCEPTION INSTEAD
+
+    async def output(self) -> Optional[list[dict]]:
+        """This filters out items that are not parent items
+        """
+        def only_get_parent_items(item: dict):
+            return item['names']['display'] == item['names']['raw']
+        return list(filter(only_get_parent_items, await self.get_results()))
 
     @staticmethod
     def query_to_item(results: list[dict]):  # generator

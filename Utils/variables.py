@@ -13,6 +13,7 @@ class Models:
         assert isinstance(guild_id, int)
         document = {'_id': guild_id,
                     'prefix': '.',
+                    'exempted': False
                     }
         return document
 

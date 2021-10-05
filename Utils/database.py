@@ -29,7 +29,7 @@ class Database:
     USERS = Client.DISCORD['users']
     GUILDS = Client.DISCORD['guilds']
     CATEGORIES = Client.WIKI['categories']
-    ITEMS = Client.WIKI['items']
+    ITEMS = Client.WIKI['items new']  # TODO: Remove Old Database
 
     @classmethod
     def exists(cls, collection: pymongo.collection.Collection, lookup: dict) -> bool:
