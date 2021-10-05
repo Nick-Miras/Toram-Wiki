@@ -244,26 +244,6 @@ class Item(WikiObject):
 
         return value
 
-    @validator('names')
-    def check_if_names_are_valid(cls, input_value):  # TODO: REMOVE
-        names = {
-            'display': '',
-            'raw': ''
-        }
-        if any(key not in input_value for key in names.keys()) is True:
-            raise MissingKeys([key for key in names.keys() if key not in input_value])
-        return input_value
-
-    @validator('parents')
-    def check_if_parents_are_valid(cls, input_value: dict):  # TODO: REMOVE
-        parents = {
-            'category': '',
-            'item': ''
-        }
-        if any(key not in input_value for key in parents.keys()) is True:
-            raise MissingKeys([key for key in parents.keys() if key not in input_value])
-        return input_value
-
     @validator('index')
     def check_if_index_is_valid(cls, input_value: dict, values):
         index = {
