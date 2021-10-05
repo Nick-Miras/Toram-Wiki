@@ -6,7 +6,7 @@ from typing import Any, Optional, Generator
 import discord
 from discord.ext import commands
 
-from Utils import PaginationItem, PaginatorView, PageSource, Paginator, SelectOption, Dropdown
+from Utils import PaginationItem, PaginatorView, PageSource, Paginator, SelectOption, Dropdown, ItemNotFound
 from Utils.errors import Error
 from Utils.variables import Images, Models
 from Utils.wiki import QueryItem, Item
@@ -279,9 +279,9 @@ class Query(commands.Cog):
     @classmethod
     async def _search(cls, ctx: commands.Context, query: str) -> dict:
         query_item = QueryItem(query)
-        results: list[dict] = await query_item.output()
-
-        if not results:
+        try:
+            results: list[dict] = await query_item.output()
+        except ItemNotFound:
             embed = Models.error_embed('Item Not Found!')
             raise Error(embed, embed=True)
 

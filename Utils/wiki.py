@@ -129,14 +129,14 @@ class IndexDict(TypedDict, total=False):
 class WikiConfig(BaseConfig):
     allow_population_by_field_name = True
     arbitrary_types_allowed = True
-    extra = Extra.forbid
+    # extra = Extra.forbid
 
 
 class WikiObject(PydanticBaseModel):
     object_id: ObjectId = Field(alias='_id')
 
     def to_dict(self) -> dict:
-        return self.dict(by_alias=True)
+        return self.dict(by_alias=True, exclude={'rank'})
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -221,6 +221,7 @@ class Item(WikiObject):
     uses: list[dict] = []
     image: Union[HttpUrl, EmptyString] = ''
     index: IndexDict = {}
+    rank: Optional[int] = None
 
     def __eq__(self, other: 'Item'):
         return self.object_id == other.object_id
@@ -374,7 +375,7 @@ class QueryItem:
             return text_search_match
         if ngrams_match := await self._query_ngrams(item_name):
             return ngrams_match
-        return  # TODO: RAISE EXCEPTION INSTEAD
+        raise ItemNotFound(item_name)
 
     async def output(self) -> Optional[list[dict]]:
         """This filters out items that are not parent items

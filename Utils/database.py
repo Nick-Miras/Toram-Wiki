@@ -12,8 +12,7 @@ class DatabaseException(Exception):
 
 class ItemNotFound(DatabaseException):
     def __init__(self, item=None):
-        item = item if item else 'Item'
-        super().__init__(f'{item} cannot be found.')
+        super().__init__(f'{item or "Item"} cannot be found.')
 
 
 class Client:
