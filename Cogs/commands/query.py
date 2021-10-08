@@ -235,9 +235,9 @@ class DisplayItem:
         return embed
 
 
-class Query(commands.Cog):
-    def __init__(self, bot):
-        self.bot: commands.Bot = bot
+class ItemQueryFactory:
+    def __init__(self, query: str):
+        self.query = query
 
     @staticmethod
     def _process_results(results: list[dict]) -> list[Item]:
@@ -276,27 +276,52 @@ class Query(commands.Cog):
         message_kwargs = await paginator.show_initial_page()
         return {**message_kwargs, 'view': view}
 
-    @classmethod
-    async def _search(cls, ctx: commands.Context, query: str) -> dict:
+    @staticmethod
+    async def fetch_results(query: str) -> list[dict]:
+        """returns a list of database documents
+        """
         query_item = QueryItem(query)
         try:
             results: list[dict] = await query_item.output()
         except ItemNotFound:
             embed = Models.error_embed('Item Not Found!')
             raise Error(embed, embed=True)
-
-        if len(items := cls._process_results(results)) == 1:  # type: list[Item]
-            return await cls.display_item_as_embed(items[0])
         else:
-            return await cls.create_paginator_view_from_items(ctx, items)
+            return results
+
+    async def get_message_data(self, ctx: commands.Context) -> dict:
+        """returns a dictionary that can be used as discord.Message data.
+        """
+        results: list[dict] = await self.fetch_results(self.query)
+
+        # should I use walrus here for the sake of walruses?
+        if len(items := self._process_results(results)) == 1:  # type: list[Item]
+            return await self.display_item_as_embed(items[0])
+        else:
+            return await self.create_paginator_view_from_items(ctx, items)
+
+
+class Query(commands.Cog):
+    def __init__(self, bot):
+        self.bot: commands.Bot = bot
 
     @commands.command()
-    async def search(self, ctx, *, query: Optional[str] = None):
+    async def item(self, ctx, *, query: Optional[str] = None):
         if query is None:
             raise Error(f'`{ctx.prefix}search (item name)`')
 
-        kwargs = await self._search(ctx, query)
-        await ctx.send(**kwargs)
+        search_for_this = ItemQueryFactory(query=query)
+        message_data: dict = await search_for_this.get_message_data(ctx)
+        await ctx.send(**message_data)
+
+    @commands.command()
+    async def search(self, ctx):
+        error_message = dedent(f"""\
+        Deprecated!
+        Use `{ctx.prefix}item` instead!
+        Note: Boss Search is not yet added
+        """)
+        raise Error(error_message, embed=True)
 
 
 def setup(bot):

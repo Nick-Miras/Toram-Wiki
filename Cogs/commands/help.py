@@ -12,7 +12,8 @@ class Help(commands.Cog):  # TODO: Create Paginator for each command
         pfx = ctx.prefix
         # main fields
         __fields = {
-            f'{pfx}search': 'Command for searching information about Toram Items',
+            f'{pfx}item': 'Command for searching information about Toram Items',
+            # f'{pfx}report': 'Command for reporting bugs to bot owner'
         }
         __admin_fields = {
             f'{pfx}set prefix': 'Sets the prefix'

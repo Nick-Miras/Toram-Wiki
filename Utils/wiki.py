@@ -279,14 +279,14 @@ class QueryItem:
         self.item_name = item_name
 
     @staticmethod
-    async def _query_phonetic(word) -> list[dict]:  # rank 1  # TODO: Maybe Remove This
+    def _query_phonetic(word) -> list[dict]:  # rank 1  # TODO: Maybe Remove This
         pipeline = [
             {'$match': {'index.phonetic': metaphone(word)}}
         ]  # removed project
         return list(Database.ITEMS.aggregate(pipeline))
 
     @staticmethod
-    async def _query_text(word) -> list[dict]:  # rank 2
+    def _query_text(word) -> list[dict]:  # rank 2
         pipeline = [
             {'$match': {'$text': {'$search': word}}},  # search
             {'$addFields': {'rank': {  # TODO: Verify if the Round and Divide Operators are required
@@ -315,7 +315,7 @@ class QueryItem:
         return list(Database.ITEMS.aggregate(pipeline_2))
 
     @staticmethod
-    async def _query_ngrams(word) -> list[dict]:  # rank 3
+    def _query_ngrams(word) -> list[dict]:  # rank 3
         grams = list(Grams.trigram(word))
         # TODO: Replace the damn name of trigram
         pipeline = [
@@ -369,11 +369,11 @@ class QueryItem:
         if phrase_match := list(Database.ITEMS.find({'$text': {'$search': f'\"{item_name}\"'}})):
             return phrase_match
         # from here on, exact word matching is exhausted so we will have to find other ways to match the query
-        if phonetic_match := await self._query_phonetic(item_name):
+        if phonetic_match := self._query_phonetic(item_name):
             return phonetic_match
-        if text_search_match := await self._query_text(item_name):
+        if text_search_match := self._query_text(item_name):
             return text_search_match
-        if ngrams_match := await self._query_ngrams(item_name):
+        if ngrams_match := self._query_ngrams(item_name):
             return ngrams_match
         raise ItemNotFound(item_name)
 
