@@ -57,7 +57,7 @@ class MyBot(commands.Bot):
 
 bot = MyBot()
 
-bot.command
+
 @bot.event
 async def on_message(message: discord.Message):
     """If the bot gets mentioned
