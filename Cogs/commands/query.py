@@ -308,7 +308,7 @@ class Query(commands.Cog):
     @commands.command()
     async def item(self, ctx, *, query: Optional[str] = None):
         if query is None:
-            raise Error(f'`{ctx.prefix}search (item name)`')
+            raise Error(f'`{ctx.prefix}item (item name)`')
 
         search_for_this = ItemQueryFactory(query=query)
         message_data: dict = await search_for_this.get_message_data(ctx)
