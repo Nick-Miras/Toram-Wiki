@@ -4,6 +4,8 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
+from pydantic import HttpUrl
+
 from Utils import Error
 
 
@@ -25,7 +27,6 @@ class SupportCommands(commands.Cog):
 
         bot_owner: discord.User = await self.bot.fetch_user(await self.bot.owner_id)
         channel: discord.DMChannel = await bot_owner.create_dm()
-
         embed = discord.Embed(description=message)
         embed.set_author(name='Bug Report')  # TODO: Add Setting Thumbnail
         await channel.send(embed=embed)

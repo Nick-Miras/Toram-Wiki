@@ -1,19 +1,25 @@
 import itertools
 import re
 from textwrap import dedent
-from typing import Any, Optional, Generator
+from typing import Any, Optional, Generator, Union
 
 import discord
 from discord.ext import commands
 
-from Utils import PaginationItem, PaginatorView, PageSource, Paginator, SelectOption, Dropdown, ItemNotFound
-from Utils.errors import Error
-from Utils.variables import Images, Models
-from Utils.wiki import QueryItem, Item
+from Utils import PaginationItem, PaginatorView, PaginationItemSource, Paginator, SelectOption, Dropdown
+from Utils.database.exceptions import ItemNotFound
+from Utils.exceptions import Error
+from Utils.constants import Images
+from Utils.search.item import QueryItem, Item
+from Utils.generics.embeds import ErrorEmbed
 
 
-class Source(PageSource):
-    async def format_page(self, menu: Paginator, data: list[PaginationItem]):
+class QueryPaginator(Paginator):
+
+    @staticmethod
+    async def _format_page(menu: 'Paginator', data: list[PaginationItem]) -> Union[str, discord.Embed]:
+        source = menu.source
+
         embed = discord.Embed(
             colour=0xfb607f
         )
@@ -21,13 +27,16 @@ class Source(PageSource):
         embed.set_thumbnail(url=Images.monocle)
 
         names = [item.name for item in data]
-        offset = menu.current_page * self.per_page
+        offset = menu.current_page * source.per_page
         embed.description = '\n'.join(f'> **{num}. {name}**' for num, name in enumerate(names, start=offset + 1))
-        if self.max_pages > 1:
-            embed.set_footer(text=f'Page: {menu.current_page + 1}/{self.max_pages}')
+        if source.max_pages > 1:
+            embed.set_footer(text=f'Page: {menu.current_page + 1}/{source.max_pages}')
         else:
             embed.set_footer(text=f'Last Page')
         return embed
+
+    def __getitem__(self, item):  # basically the same as `source.get_child`
+        return self.source.get_child(self.source.get_page(self.current_page), item)
 
 
 class ItemPagination(PaginationItem):
@@ -53,8 +62,7 @@ class QueryDropdown(Dropdown):
 
 
 class TruncateString:
-    pass
-
+   ...
 
 class DisplayItem:
     def __init__(self, item: Item):
@@ -171,7 +179,7 @@ class DisplayItem:
     def apply_recipe_to(embed: discord.Embed, item: Item):
         def get_recipes_from(recipe: dict) -> Generator[str, None, None]:
             for key, value in recipe.items():
-                if isinstance(value, dict):  # this only occurs once we get to the required materials part
+                if isinstance(value, dict):  # this only occurs once we get to the materials part
                     def get_materials_from(materials: dict) -> Generator[str, None, None]:
                         for material_name, amount in materials.items():  # TODO: Maybe truncate this???
                             yield f'- {amount}x {material_name}'
@@ -268,7 +276,7 @@ class ItemQueryFactory:
         data: list[ItemPagination] = cls._process_items(items)
 
         # creates the paginator class
-        paginator = Paginator(source=Source(data, per_page=5))
+        paginator = QueryPaginator(source=PaginationItemSource(data, per_page=5))
 
         # creates the View Class that is composed py the Paginator Class
         view = PaginatorView(ctx, paginator=paginator, dropdown=QueryDropdown)
@@ -284,7 +292,7 @@ class ItemQueryFactory:
         try:
             results: list[dict] = await query_item.output()
         except ItemNotFound:
-            embed = Models.error_embed('Item Not Found!')
+            embed = ErrorEmbed.get('Item Not Found!')
             raise Error(embed, embed=True)
         else:
             return results
@@ -313,6 +321,11 @@ class Query(commands.Cog):
         search_for_this = ItemQueryFactory(query=query)
         message_data: dict = await search_for_this.get_message_data(ctx)
         await ctx.send(**message_data)
+
+    @commands.command()
+    async def level(self, ctx, level: Optional[int] = None):
+        if level is None:
+            raise Error(f'`{ctx.prefix}level (level)`')
 
     @commands.command()
     async def search(self, ctx):

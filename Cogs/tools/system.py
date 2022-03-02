@@ -3,10 +3,24 @@ import pymongo.errors
 from discord.ext import commands
 
 from Utils.database import Database
-from Utils.variables import Models
 
 
-class System(commands.Cog):
+def get_guild_document(guild_id: int) -> dict:
+    """
+    This function returns the database document for initializing new Discord Servers that were added
+
+    :param guild_id: :class: `int` This is the id of the guild
+    """
+    assert isinstance(guild_id, int)
+    document = {'_id': guild_id,
+                'prefix': '.',
+                'exempted': False
+                }
+    return document
+
+
+# TODO: Remove PRINT Statements
+class System(commands.Cog, name='system'):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
@@ -19,7 +33,7 @@ class System(commands.Cog):
 
         not_added_to_database: list[discord.Guild] = [guild for guild in bot.guilds if guild.id not in already_added]
         for guild in not_added_to_database:
-            Database.GUILDS.insert_one(Models.guild_document(guild.id))
+            Database.GUILDS.insert_one(get_guild_document(guild.id))
             print(f"Added: {guild.id}")
 
     @staticmethod
@@ -44,7 +58,7 @@ class System(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         try:
-            document = Models.guild_document(guild.id)
+            document = get_guild_document(guild.id)
             Database.GUILDS.insert_one(document)
         except pymongo.errors.DuplicateKeyError:
             pass

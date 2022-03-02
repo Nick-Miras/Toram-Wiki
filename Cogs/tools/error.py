@@ -4,8 +4,9 @@ import traceback
 import discord
 from discord.ext import commands
 
-from Utils import errors
-from Utils.variables import Models
+from Utils import exceptions
+from Utils.constants import Models
+from Utils.generics.embeds import ErrorEmbed
 
 
 class Error(commands.Cog):
@@ -46,7 +47,7 @@ class Error(commands.Cog):
             return
 
         if isinstance(error, commands.MemberNotFound):
-            error = Models.error_embed(f'Could not find `{error.argument}`!')
+            error = ErrorEmbed.get(f'Could not find `{error.argument}`!')
             await ctx.send(embed=error)
 
         if isinstance(error, commands.BadArgument):
@@ -82,7 +83,7 @@ class Error(commands.Cog):
             message = error.message
             if isinstance(message, str):
                 if error.use_embed:  # If true then use the error_embed
-                    embed = Models.error_embed(message)
+                    embed = ErrorEmbed.get(message)
                     args = {'embed': embed, 'content': None}
                 else:
                     args = {'content': message, 'embed': None}
