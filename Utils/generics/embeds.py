@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import discord
 
-from Utils import ColorVar, Images
+from Utils.constants import colors, images
 
 
 class EmbedModel(ABC):
@@ -10,7 +10,7 @@ class EmbedModel(ABC):
     @staticmethod
     @abstractmethod
     def get(message: str = None) -> discord.Embed:
-        ...
+        pass
 
 
 class ErrorEmbed(EmbedModel):
@@ -19,9 +19,9 @@ class ErrorEmbed(EmbedModel):
     def get(message: str = None) -> discord.Embed:
         embed = discord.Embed(
             description=message,
-            color=ColorVar.error_red
+            color=colors.ERROR_RED
         )
-        embed.set_thumbnail(url=Images.exclamation)
+        embed.set_thumbnail(url=images.EXCLAMATION)
         embed.set_author(name='Error!')
         return embed
 
@@ -32,10 +32,10 @@ class NotificationEmbed(EmbedModel):
     def get(message: str = None) -> discord.Embed:
         embed = discord.Embed(
             description=message,
-            color=ColorVar.gold
+            color=colors.GOLD
         )
         embed.set_author(name='Notification!')
-        embed.set_thumbnail(url=Images.notifications)
+        embed.set_thumbnail(url=images.NOTIFICATIONS)
         return embed
 
 
@@ -53,8 +53,8 @@ class SuccessEmbed(EmbedModel):
         """
         embed = discord.Embed(
             description=message,
-            color=ColorVar.bright_green
+            color=colors.BRIGHT_GREEN
         )
-        embed.set_thumbnail(url=Images.successful)
+        embed.set_thumbnail(url=images.SUCCESSFUL)
         embed.set_author(name='Success!')
         return embed

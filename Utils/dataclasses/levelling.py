@@ -1,26 +1,18 @@
-from typing import TypedDict, Optional
+from typing import TypedDict
 
-from bson import ObjectId
-from pydantic import BaseModel as PydanticBaseModel, BaseConfig
-
-from Utils.generics.strings import remove_underscores
 from Utils.types import OptionalStr, IdStringPair
+from .abc import WikiBaseConfig, WikiBaseModel
+from ..generics.strings import remove_underscores
 
 ExpData = TypedDict('ExpData', {'exp': int, 'break status': OptionalStr, 'exp progress': float})
 
 
-class LevellingConfig(BaseConfig):
-    arbitrary_types_allowed = True
-    allow_mutation = False
-    alias_generator = remove_underscores
-
-
-class LevellingInformation(PydanticBaseModel):
-    mob_type: int
+class LevellingInformation(WikiBaseModel):
+    mob_type: str
     mob_level: int
     mob_information: IdStringPair
     mob_location: str
-    exp_information: ExpData
+    exp_information: list[ExpData]
 
-    class Config(LevellingConfig):
-        ...
+    class Config(WikiBaseConfig):
+        alias_generator = remove_underscores

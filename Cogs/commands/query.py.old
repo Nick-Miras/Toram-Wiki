@@ -3,24 +3,25 @@ import re
 from textwrap import dedent
 from typing import Any, Optional, Generator, Union
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
-from Utils import PaginationItem, PaginatorView, PaginationItemSource, Paginator, SelectOption, Dropdown
-from Utils.database.exceptions import ItemNotFound
-from Utils.exceptions import Error
+from Utils import PaginatorView, SelectOption, Dropdown
 from Utils.constants import Images
-from Utils.search.item import QueryItem, Item
+from Utils.database.exceptions import ItemNotFound
+from Utils.exceptions import CmdError
 from Utils.generics.embeds import ErrorEmbed
+from Utils.paginator.paginator import PaginationItem, Paginator, PaginationItemSource
+from Utils.search.item import QueryItem, Item
 
 
 class QueryPaginator(Paginator):
 
     @staticmethod
-    async def _format_page(menu: 'Paginator', data: list[PaginationItem]) -> Union[str, discord.Embed]:
+    async def _format_page(menu: 'Paginator', data: list[PaginationItem]) -> Union[str, nextcord.Embed]:
         source = menu.source
 
-        embed = discord.Embed(
+        embed = nextcord.Embed(
             colour=0xfb607f
         )
         embed.set_author(name='Did you mean?')
@@ -40,7 +41,7 @@ class QueryPaginator(Paginator):
 
 
 class ItemPagination(PaginationItem):
-    async def display(self) -> discord.Embed:
+    async def display(self) -> nextcord.Embed:
         item = DisplayItem(self.item)
         return await item.display_as_embed()
 
@@ -63,6 +64,7 @@ class QueryDropdown(Dropdown):
 
 class TruncateString:
    ...
+
 
 class DisplayItem:
     def __init__(self, item: Item):
@@ -105,14 +107,14 @@ class DisplayItem:
             yield string
 
     @staticmethod
-    def apply_image_to(embed: discord.Embed, item: Item):
+    def apply_image_to(embed: nextcord.Embed, item: Item):
         if not (image := item.image):
             return
 
         embed.set_thumbnail(url=image)
 
     @staticmethod
-    def apply_market_value_to(embed: discord.Embed, item: Item):
+    def apply_market_value_to(embed: nextcord.Embed, item: Item):
         if not (market_value := item.market_value):
             return
 
@@ -120,7 +122,7 @@ class DisplayItem:
             embed.add_field(name=key.capitalize(), value=value, inline=False)
 
     @staticmethod
-    def apply_stats_to(embed: discord.Embed, item: Item):
+    def apply_stats_to(embed: nextcord.Embed, item: Item):
         def get_stats(stats: dict):
             for tree, stat_list in stats.items():
                 if tree != 'main':
@@ -136,14 +138,14 @@ class DisplayItem:
         embed.add_field(name='Stats:', value=value, inline=False)
 
     @staticmethod
-    def apply_note_to(embed: discord.Embed, item: Item):
+    def apply_note_to(embed: nextcord.Embed, item: Item):
         if not (note := item.note):
             return
 
         embed.add_field(name='Description:', value=note, inline=False)
 
     @classmethod
-    def apply_locations_to(cls, embed: discord.Embed, item: Item):
+    def apply_locations_to(cls, embed: nextcord.Embed, item: Item):
         def get_locations_from(locations: list[dict]) -> Generator[str, None, None]:
             for location in locations:
                 string = []
@@ -160,7 +162,7 @@ class DisplayItem:
             embed.add_field(name='Location:', value=location, inline=False)
 
     @classmethod
-    def apply_uses_to(cls, embed: discord.Embed, item: Item):
+    def apply_uses_to(cls, embed: nextcord.Embed, item: Item):
         def get_uses_from(uses: list[dict]) -> Generator[str, None, None]:
             for use in uses:
                 attr = use['attr'].capitalize()
@@ -176,7 +178,7 @@ class DisplayItem:
             embed.add_field(name='Uses:', value=uses, inline=False)
 
     @staticmethod
-    def apply_recipe_to(embed: discord.Embed, item: Item):
+    def apply_recipe_to(embed: nextcord.Embed, item: Item):
         def get_recipes_from(recipe: dict) -> Generator[str, None, None]:
             for key, value in recipe.items():
                 if isinstance(value, dict):  # this only occurs once we get to the materials part
@@ -192,7 +194,7 @@ class DisplayItem:
         embed.add_field(name='Recipe:', value='\n'.join(get_recipes_from(recipe)), inline=False)
 
     @classmethod
-    def apply_embed_fields_to(cls, embed: discord.Embed, item: Item):  # maybe create coroutine
+    def apply_embed_fields_to(cls, embed: nextcord.Embed, item: Item):  # maybe create coroutine
         pair = embed, item
 
         # TODO: Decide whether to make these into decorators
@@ -206,7 +208,7 @@ class DisplayItem:
 
     @staticmethod
     def embed_format(item: Item):
-        embed = discord.Embed(
+        embed = nextcord.Embed(
             colour=0xffd700
         )
 
@@ -215,7 +217,7 @@ class DisplayItem:
 
         return embed
 
-    async def get_embed_pages(self) -> Generator[discord.Embed, None, None]:
+    async def get_embed_pages(self) -> Generator[nextcord.Embed, None, None]:
         def grouper(group_size, iterable):
             args = [iter(iterable)] * group_size
             return itertools.zip_longest(*args)
@@ -223,7 +225,7 @@ class DisplayItem:
         item = self.item
         embed = self.embed_format(item)
 
-        _temp_embed = discord.Embed()  # temporary embed used for applying the fields
+        _temp_embed = nextcord.Embed()  # temporary embed used for applying the fields
         self.apply_embed_fields_to(_temp_embed, item)  # adds all the corresponding fields
 
         fields = _temp_embed._fields
@@ -233,7 +235,7 @@ class DisplayItem:
             new_embed._fields = list(filter(lambda element: element is not None, grouped_fields))
             yield new_embed
 
-    async def display_as_embed(self) -> discord.Embed:
+    async def display_as_embed(self) -> nextcord.Embed:
         item = self.item
         embed = self.embed_format(item)
 
@@ -266,7 +268,7 @@ class ItemQueryFactory:
         return list(map(mapper, items))
 
     @staticmethod
-    async def display_item_as_embed(item: Item) -> dict[str, discord.Embed]:
+    async def display_item_as_embed(item: Item) -> dict[str, nextcord.Embed]:
         item = DisplayItem(item)
         embed = await item.display_as_embed()
         return {'embed': embed}
@@ -293,12 +295,12 @@ class ItemQueryFactory:
             results: list[dict] = await query_item.output()
         except ItemNotFound:
             embed = ErrorEmbed.get('Item Not Found!')
-            raise Error(embed, embed=True)
+            raise CmdError(embed, embed=True)
         else:
             return results
 
     async def get_message_data(self, ctx: commands.Context) -> dict:
-        """returns a dictionary that can be used as discord.Message data.
+        """returns a dictionary that can be used as nextcord.Message data.
         """
         results: list[dict] = await self.fetch_results(self.query)
 
@@ -316,16 +318,11 @@ class Query(commands.Cog):
     @commands.command()
     async def item(self, ctx, *, query: Optional[str] = None):
         if query is None:
-            raise Error(f'`{ctx.prefix}item (item name)`')
+            raise CmdError(f'`{ctx.prefix}item (item name)`')
 
         search_for_this = ItemQueryFactory(query=query)
         message_data: dict = await search_for_this.get_message_data(ctx)
         await ctx.send(**message_data)
-
-    @commands.command()
-    async def level(self, ctx, level: Optional[int] = None):
-        if level is None:
-            raise Error(f'`{ctx.prefix}level (level)`')
 
     @commands.command()
     async def search(self, ctx):
@@ -334,7 +331,7 @@ class Query(commands.Cog):
         Use `{ctx.prefix}item` instead!
         Note: Boss Search is not yet added
         """)
-        raise Error(error_message, embed=True)
+        raise CmdError(error_message, embed=True)
 
 
 def setup(bot):

@@ -1,0 +1,2 @@
+connection_string: ${oc.env:MONGOCLIENT}
+logging: 'logging.logs'  # string path to database collection

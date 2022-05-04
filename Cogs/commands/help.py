@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 
-class Help(commands.Cog):  # TODO: Create Paginator for each command
+class Help(commands.Cog):
 
     def __init__(self, bot):
         self.bot: commands.Bot = bot
@@ -22,12 +22,12 @@ class Help(commands.Cog):  # TODO: Create Paginator for each command
         if ctx.author.guild_permissions.administrator:
             __fields.update(__admin_fields)
 
-        embed = discord.Embed()  # TODO: Improve Help Embed
+        embed = discord.Embed()
         embed.set_author(name='Help')
         for name, value in __fields.items():
             embed.add_field(name=name, value=value, inline=False)
         await ctx.send(embed=embed)
 
 
-def setup(bot):
-    bot.add_cog(Help(bot))
+async def setup(bot):
+    await bot.add_cog(Help(bot))

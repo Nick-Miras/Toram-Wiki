@@ -1,16 +1,15 @@
 import re
 from abc import ABC
-from typing import Optional, Type, Generator
-
-from scrapy import Selector
+from typing import Optional, Generator
 
 from Utils.dataclasses.levelling import ExpData
-from Utils.generics.numbers import get_integer_from, get_float_from, try_int, to_ordinal
-from Utils.generics.xpath import normalize_space, substring_before, substring_after
+from Utils.generics.numbers import extract_integer_from, get_float_from, try_int, to_ordinal
+from Utils.generics.xpath import normalize_space
 from Utils.types import IdStringPair, SelectorType, OptionalStr
-from .abc import ParserLeaf, CompositeParser, ParserResults, return_parser_results
-from .container_paths import LevellingPath
-from .generics import get_container_from
+from scraper.spiders.parsers.abc import ParserLeaf, CompositeParser, return_parser_results
+from scraper.spiders.parsers.container_paths import LevellingPath
+from scraper.spiders.parsers.generics import get_container_from
+from scraper.spiders.parsers.models import ParserResults
 
 
 class LevellingParserLeaf(ParserLeaf, ABC):
@@ -33,7 +32,7 @@ class MobLevel(LevellingParserLeaf):
     @classmethod
     @return_parser_results(int)
     def get_result(cls, container: SelectorType) -> list[ParserResults]:
-        return get_integer_from(container.xpath('./div[@class="level-col-1"]/b').get())
+        return extract_integer_from(container.xpath('./div[@class="level-col-1"]/b').get())
 
 
 class MobInformation(LevellingParserLeaf):
@@ -41,8 +40,8 @@ class MobInformation(LevellingParserLeaf):
 
     @staticmethod
     @get_container_from('@href')
-    def get_id(container: SelectorType) -> str:
-        return container.get()
+    def get_id(container: SelectorType) -> int:
+        return extract_integer_from(container.get())
 
     @staticmethod
     @get_container_from('text()')
@@ -71,7 +70,7 @@ class ExpInformation(LevellingParserLeaf):
     @staticmethod
     @get_container_from('./b/text()')
     def get_exp(container: SelectorType) -> int:
-        return get_integer_from(container.get())
+        return extract_integer_from(container.get())
 
     @staticmethod
     @get_container_from('./text()')
@@ -80,7 +79,7 @@ class ExpInformation(LevellingParserLeaf):
         Use an entirely different xpath for extracting the exp,
         because Coryn places the exp information differently for not-bolded exp string.
         """
-        return get_integer_from(container.get())
+        return extract_integer_from(container.get())
 
     @staticmethod
     @get_container_from('./i/text()')
@@ -111,6 +110,13 @@ class ExpInformation(LevellingParserLeaf):
 
 class LevellingCompositeParser(CompositeParser):
     container_path = LevellingPath
+    parsers: list[ParserLeaf] = [
+        MobType,
+        MobLevel,
+        MobInformation,
+        MobLocation,
+        ExpInformation
+    ]
 
     @staticmethod
     def parser_validator(parser: ParserLeaf) -> tuple[bool, Optional[str]]:

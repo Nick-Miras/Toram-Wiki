@@ -29,7 +29,7 @@ class MobPath(CorynContainerPaths):
 
     @staticmethod
     def get() -> str:
-        ...
+        pass
 
 
 class LevellingPath(CorynContainerPaths):

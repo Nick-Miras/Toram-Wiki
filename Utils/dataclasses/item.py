@@ -1,189 +1,188 @@
+from __future__ import annotations
+
 from enum import Enum
-from typing import Optional, Union, Any, Callable, TypedDict
+from typing import TypedDict, Optional, TypeAlias
 
-import pymongo
-from bson.objectid import ObjectId
-from phonetics import metaphone
-from pydantic import BaseModel as PydanticBaseModel
-from pydantic import Field, validator, PrivateAttr, BaseConfig, HttpUrl
-from pydantic.fields import ModelField
+from bson import ObjectId
+from pydantic import HttpUrl, Field, validator
 
-from .. import Database
-from ..database.exceptions import ItemNotFound
-from ..generics.strings import Grams
-from ..types import StringOrInt, IdStringPair, OptionalStr, OptionalInt, StringStringPair
+from .abc import WikiBaseModel, WikiBaseConfig
+from ..generics import remove_duplicates
+from ..generics.strings import remove_underscores
+from ..types import IdStringPair
+
+OptionalInt = Optional[int]
+OptionalStr = Optional[str]
+StringOrInt = str | int
+IdType = int | ObjectId
 
 
-def get_exception_from(func: Callable, args) -> Optional[Exception]:
+class ItemType(Enum):
+
+    # Others
+    Usable = 'Usable'
+    Material = 'Material'
+    Gem = 'Gem'
+    RefinementSupport = 'Refinement Support'
+    Piercer = 'Piercer'
+    Ore = 'Ore'
+
+    # Crystas
+    ArmorCrysta = 'Armor Crysta'
+    NormalCrysta = 'Normal Crysta'
+    SpecialCrysta = 'Special Crysta'
+    WeaponCrysta = 'Weapon Crysta'
+    AdditionalCrysta = 'Additional Crysta'
+    EnhancerCrystaRed = 'Enhancer Crysta (Red)'
+    EnhancerCrystaBlue = 'Enhancer Crysta (Blue)'
+    EnhancerCrystaGreen = 'Enhancer Crysta (Green)'
+    EnhancerCrystaPurple = 'Enhancer Crysta (Purple)'
+    EnhancerCrystaYellow = 'Enhancer Crysta (Yellow)'
+
+    # Equipment
+    SpecialGear = 'Special'
+    AdditionalGear = 'Additional'
+    Armor = 'Armor'
+
+    # Weapons
+    Dagger = 'Dagger'
+    Katana = 'Katana'
+    Arrow = 'Arrow'
+    MagicDevice = 'Magic Device'
+    OneHandedSword = '1 Handed Sword'
+    TwoHandedSword = '2 Handed Sword'
+    Staff = 'Staff'
+    Halberd = 'Halberd'
+    Bow = 'Bow'
+    Bowgun = 'Bowgun'
+    Knuckles = 'Knuckles'
+    Shield = 'Shield'
+    Regislet = 'Regislet'
+
+
+def return_default_image(item_type: ItemType) -> str:
+    match item_type:
+        # TODO: Finish Inserting URLs
+        # crystas
+        case ItemType.ArmorCrysta:
+            return ""
+        case ItemType.NormalCrysta:
+            return ""
+        case ItemType.SpecialCrysta:
+            return ""
+        case ItemType.WeaponCrysta:
+            return ""
+        case ItemType.AdditionalCrysta:
+            return ""
+        case ItemType.EnhancerCrystaRed:
+            return ""
+        case ItemType.EnhancerCrystaBlue:
+            return ""
+        case ItemType.EnhancerCrystaGreen:
+            return ""
+        case ItemType.EnhancerCrystaPurple:
+            return ""
+        case ItemType.EnhancerCrystaYellow:
+            return ""
+
+        # weapons
+        case ItemType.Dagger:
+            return "https://cdn.discordapp.com/attachments/432408793998163968/816542734265221120/PicsArt_03-03-01.28.24.png"
+        case ItemType.Katana:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788234037033697290/IMG_20201013_065623.png"
+        case ItemType.Arrow:
+            return "https://cdn.discordapp.com/attachments/432408793998163968/816578870420439081/1614757958509.png"
+        case ItemType.MagicDevice:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788234037772156960/IMG_20201013_063412.png"
+        case ItemType.OneHandedSword:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788234038539190272/IMG_20201013_063118.png"
+        case ItemType.TwoHandedSword:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788234038761881665/IMG_20201013_063020.png"
+        case ItemType.Staff:
+            return "https://cdn.discordapp.com/attachments/432408793998163968/787587412237746181/650557657564053519.png"
+        case ItemType.Halberd:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788234036454621184/IMG_20201013_084126.png"
+        case ItemType.Bow:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788234036719648808/IMG_20201013_083622.png"
+        case ItemType.Bowgun:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788234037499920418/IMG_20201013_063539.png"
+        case ItemType.Knuckles:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788234036136509500/IMG_20201013_084804.png"
+        case ItemType.Shield:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788234432246448148/IMG_20201013_083854.png"
+
+        # equipment
+        case ItemType.Special:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788352419712860180/IMG_20201013_174953.png"
+        case ItemType.Additional:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788352419443769374/IMG_20201013_175047.png"
+        case ItemType.Armor:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/788352420328767498/IMG_20201013_174251.png"
+
+        # others
+        case ItemType.Usable:
+            return ""
+        case ItemType.Material:
+            return ""
+        case ItemType.Gem:
+            return "https://cdn.discordapp.com/attachments/740178985589145684/789755110875201556/IMG_20201216_165213.png"
+        case ItemType.RefinementSupport:
+            return ""
+        case ItemType.Piercer:
+            return "https://cdn.discordapp.com/attachments/654287868612575263/789740560047013929/IMG_20201219_115652.png"
+        case ItemType.Ore:
+            return "https://cdn.discordapp.com/attachments/740178985589145684/788053476244324382/IMG_20201013_090044.png"
+
+
+class RequirementType(Enum):
+    HeavyArmor = 'Heavy Armor'
+    LightArmor = 'Light Armor'
+    DualSwords = 'Dual Swords'
+    Staff = 'Staff'
+    MagicDevice = 'Magic Device'
+    Bow = 'Bow'
+    Shield = 'Shield'
+    Event = 'Event'
+    Dagger = 'Dagger'
+    TwoHandedSword = '2-Handed Sword'
+    OneHandedSword = '1-Handed Sword'
+    Katana = 'Katana'
+    Knuckle = 'Knuckle'
+    Bowgun = 'Bowgun'
+    AdditionalGear = 'Additional Gear'
+    Arrow = 'Arrow'
+    SpecialGear = 'Special Gear'
+    Halberd = 'Halberd'
+    Armor = 'Armor'
+
+
+RequirementTypeSequence: TypeAlias = list[RequirementType]
+
+
+def get_requirement_type(partial_type: str) -> RequirementTypeSequence:
+    return remove_duplicates(RequirementType(_) for _ in partial_type.split(','))
+
+
+def get_item_type(partial_type: str) -> Optional[ItemType]:
+    """
+    Returns:
+        None or ItemType due to Coryn classifying regislets as items without specifying their item types
+    """
     try:
-        func(*args)
-    except Exception as exc:
-        return exc
-    else:
+        return ItemType(partial_type)
+    except ValueError:
         return
-
-
-class WikiException(Exception):
-    ...
-
-
-class NoParent(WikiException):
-    def __init__(self, item=None):
-        item = item if item else 'Item'
-        super().__init__(f'{item} has no parents')
-
-
-class NoChildren(WikiException):
-    def __init__(self, item=None):
-        item = item if item else 'Item'
-        super().__init__(f'{item} has no children')
-
-
-class InvalidCategory(WikiException):
-    def __init__(self, category=None):
-        category = category if category else 'Category'
-        super().__init__(f'{category} is not a valid category.')
-
-
-class IterableException(Exception):
-    ...
-
-
-class MissingKeys(IterableException):
-    def __init__(self, keys: list[str] = None):
-        if keys:
-            super().__init__(f'MISSING KEYS: {keys}')
-        else:
-            super().__init__(f'MISSING KEYS')
-
-
-class UnIdenticalElements(IterableException):
-    def __init__(self, set1, set2):
-        super().__init__(f'{set1} | {set2}: are not the same!')
-
-
-class PydanticObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        if not isinstance(v, ObjectId):
-            raise TypeError('ObjectId required')
-        return str(v)
-
-
-class EmptyString(Enum):
-    EMPTYSTRING = ''
-
-
-class WikiConfig(BaseConfig):
-    allow_population_by_field_name = True
-    arbitrary_types_allowed = True
-    # extra = Extra.forbid
-
-
-class WikiObject(PydanticBaseModel):
-    object_id: ObjectId = Field(alias='_id')
-
-    def to_dict(self) -> dict:
-        return self.dict(by_alias=True, exclude={'rank'})
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        return cls.parse_obj(data)
-
-    def add_to_database(self, collection: pymongo.collection.Collection):
-        if not isinstance(collection, pymongo.collection.Collection):
-            raise TypeError(f'Expected {pymongo.collection.Collection} not {collection.__class__}')
-
-        if not (data := self.to_dict()):
-            return
-
-        collection.insert_one(data)
-
-    class Config(WikiConfig):
-        ...
-
-
-class Category(WikiObject):
-    name: str
-    parent: ObjectId = ''
-    _children: list['Category'] = PrivateAttr()
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        self._children = self.get_children_from(object_id=self.object_id)
-
-    @validator('parent')
-    def parent_validator(cls, input_value, values):
-        if not (parent := input_value):
-            try:
-                parent = cls.get_parent_category(values['type'])
-            except NoParent:
-                return ''
-        if not isinstance(parent, ObjectId):
-            raise TypeError(f'{parent.__class__} is not of the type {ObjectId}')
-        if Database.exists(Database.CATEGORIES, {'_id': parent}) is False:  # verifies if parent is valid
-            raise ItemNotFound(parent)
-        return parent
-
-    def get_children_from(self, object_id) -> list['Category']:
-        """
-        Returns
-        -------
-        List of Database Documents of Children
-        """
-        def find_children() -> list[dict]:
-            if children := list(Database.CATEGORIES.find({'parent': object_id})):
-                return children
-            if children := list(Database.ITEMS.find({'parent': object_id})):
-                return children
-            raise NoChildren()
-
-        children: list[Category] = [self.from_dict(child) for child in find_children()]
-        return children
-
-    @staticmethod
-    def get_parent_category(object_id: ObjectId) -> dict:
-        """This fetches the parent document of a category, which is also a category
-
-        Returns
-        -------
-        Database Document of Parent Category
-        """
-        if not Database.exists(Database.CATEGORIES, {'_id': object_id}):
-            raise ItemNotFound(ObjectId)
-        if not (parent := Database.CATEGORIES.find_one({'_id': object_id})['parent']):
-            raise NoParent()
-        return Database.CATEGORIES.find_one({'_id': parent})  # returns database document
-
-
-class NamesDict(TypedDict):  # TODO: TO BE CHANGED
-    display: str
-    raw: str
-
-
-class ParentsDict(TypedDict):  # TODO: TO BE CHANGED
-    category: ObjectId
-    item: Union[ObjectId, EmptyString]
 
 
 class MarketValueDict(TypedDict):
     sell: OptionalInt
     process: OptionalStr
-
-
-class IndexDict(TypedDict, total=False):  # TODO: TO BE CHANGED
-    phonetic: str
-    ngrams: list[str]
-    trigram: list[str]
+    duration: OptionalStr
 
 
 class MaterialsDict(TypedDict):
     amount: int
-    item: Union[IdStringPair, tuple[None, str]]  # for mats
+    item: IdStringPair
 
 
 class RecipeDict(TypedDict):
@@ -205,60 +204,58 @@ class UsesDict(TypedDict):
     items: list[IdStringPair]
 
 
-class Item(WikiObject):
-    names: NamesDict
-    parents: ParentsDict
-    item_type: str = Field(..., alias='type')
+class StatsDict(TypedDict):
+    requirement: Optional[RequirementTypeSequence]
+    attributes: list[tuple[str, float]]
 
-    market_value: MarketValueDict = {}
-    stats: dict = {}
-    note: str = ''
-    location: list[dict] = []
-    recipe: dict = {}
-    uses: list[dict] = []
-    image: Union[HttpUrl, EmptyString] = ''
-    index: IndexDict = {}
-    rank: Optional[int] = None
 
-    def __eq__(self, other: 'Item'):
-        return self.object_id == other.object_id
+UpgradesDict = TypedDict('UpgradesDict', {
+    'from': Optional[list[IdStringPair]],
+    'into': Optional[list[IdStringPair]]
+})
 
-    def __lt__(self, other: 'Item'):
-        return self.names['display'] < other.names['display']
 
-    def __gt__(self, other: 'Item'):
-        return self.names['display'] > other.names['display']
+class ItemLeaf(WikiBaseModel):
+    id: Optional[IdType] = Field(default_factory=ObjectId, alias='_id')
+    name: str
+    type: Optional[ItemType]
+    market_value: MarketValueDict
+    image: Optional[HttpUrl] = None
+    stats: Optional[list[StatsDict]] = None
+    location: Optional[list[LocationDict]] = None
+    recipe: Optional[RecipeDict] = None
+    uses: Optional[list[UsesDict]] = None
+    upgrades: Optional[UpgradesDict] = None
 
-    @validator('*', pre=True)
-    def set_value_of_empty_fields_to_be_their_types(
-            cls, value, values: dict[str, Any], field: ModelField, config: BaseConfig
-    ):
-        if field.default is None:  # if the field is required
-            return value
+    @validator('id')
+    def to_object_id(cls, value):
+        return value or ObjectId()
 
-        for validator_ in field.validators:
-            if get_exception_from(validator_, (cls, value, values, field, config)):
-                value = field.default
+    class Config(WikiBaseConfig):
+        alias_generator = remove_underscores
 
-        return value
 
-    @validator('index')
-    def check_if_index_is_valid(cls, input_value: dict, values):
-        index = {
-            'phonetic': metaphone(values['names']['display']),
-            'ngrams': list(Grams.ngrams(values['names']['display'])),
-            'trigram': list(Grams.trigram(values['names']['display']))
-        }
-        if not input_value:  # if empty
-            input_value = index
-        if set(input_value) != set(index):
-            def get_keys(dct: dict) -> list[str]:
-                return list(dct.keys())
-            raise UnIdenticalElements(get_keys(input_value), get_keys(index))
+class ItemCompositeLeaf(WikiBaseModel):
+    item_composite_leaf_id: Optional[IdType] = Field(default_factory=ObjectId, alias='_id')
+    difference: str
+    has_dye: bool
 
-        return input_value
+    @validator('item_composite_leaf_id')
+    def to_object_id(cls, value):
+        return value or ObjectId()
 
-    class Config(WikiConfig):
-        allow_mutation = False
-        alias_generator = lambda string: string.replace('_', ' ')
-        use_enum_values = True
+    class Config(WikiBaseConfig):
+        pass
+
+
+class ItemComposite(WikiBaseModel):
+    item_composite_id: Optional[IdType] = Field(default_factory=ObjectId, alias='_id')
+    name: str
+    leaves: list[ItemCompositeLeaf]
+
+    @validator('item_composite_id')
+    def to_object_id(cls, value):
+        return value or ObjectId()
+
+    class Config(WikiBaseConfig):
+        pass

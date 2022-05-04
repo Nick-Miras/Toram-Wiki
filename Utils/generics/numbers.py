@@ -1,5 +1,10 @@
-from typing import Union
 import re
+from typing import Union, Type, Optional, TypeVar
+
+
+def seperate_integer(num: int) -> str:
+    """Examples: 100000 -> 100,000"""
+    return f'{num:,}'
 
 
 def try_int(num: str) -> Union[str, int]:
@@ -13,7 +18,8 @@ def try_int(num: str) -> Union[str, int]:
         return ret_val
 
 
-def get_integer_from(string: str) -> int:
+def extract_integer_from(string: str) -> int:
+    """Extracts Integer from String"""
     return int(re.sub(r'\D', '', string))
 
 
@@ -23,3 +29,10 @@ def get_float_from(string: str) -> float:
 
 def to_ordinal(number: int) -> str:
     return "%d%s" % (number, "tsnrhtdd"[(number // 10 % 10 != 1) * (number % 10 < 4) * number % 10::4])
+
+
+T = TypeVar('T')
+
+
+def convert_to_type_if_not_none(obj: T, object_type: Type, /) -> Optional[T]:
+    return object_type(obj) if obj is not None else None

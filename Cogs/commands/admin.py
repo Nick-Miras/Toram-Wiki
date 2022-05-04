@@ -1,10 +1,10 @@
 import discord
 from discord.ext import commands
 
-from Utils.database import Database
-from Utils.exceptions import Error
-from Utils.constants import Models
+from Cogs.exceptions import CmdError
 from Utils.generics.embeds import SuccessEmbed
+from database import get_mongodb_client
+from database.models import WhiskeyDatabase
 
 
 class Setters(commands.Cog):
@@ -19,7 +19,7 @@ class Setters(commands.Cog):
         __fields = {
             f'{pfx}set prefix': 'Sets the prefix'
         }
-        embed = discord.Embed()  # TODO: Improve Help Embed
+        embed = discord.Embed()
         embed.set_author(name='Set')
         for name, value in __fields.items():
             embed.add_field(name=name, value=value, inline=False)
@@ -29,11 +29,12 @@ class Setters(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def prefix(self, ctx, prefix=None):
         if prefix is None:
-            raise Error(f'`{ctx.prefix}set prefix [prefix]`')
+            raise CmdError(f'`{ctx.prefix}set prefix [prefix]`')
 
-        Database.GUILDS.update_one({'_id': ctx.guild.id}, {'$set': {'prefix': prefix}})
+        discord_guild = WhiskeyDatabase(get_mongodb_client()).discord_guilds
+        discord_guild.update_one({'_id': ctx.guild.id}, {'$set': {'prefix': prefix}})
         await ctx.send(embed=SuccessEmbed.get(f'Set prefix to: `{prefix}`'))
 
 
-def setup(bot):
-    bot.add_cog(Setters(bot))
+async def setup(bot):
+    await bot.add_cog(Setters(bot))

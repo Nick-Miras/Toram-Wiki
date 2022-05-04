@@ -1,5 +1,4 @@
 """Contains all the exceptions for the paginator"""
-from ctypes import Union
 from uuid import UUID
 
 
@@ -15,7 +14,24 @@ class InitializationError(PaginatorException):
 
 
 class ChildNotFound(PaginatorException):
-    """Exception raised when a Page Date child is not found"""
+    """Exception raised when a PageDataNode child is not found"""
 
-    def __init__(self, find: Union[UUID, str]):
+    def __init__(self, find: UUID | str):
         super().__init__(f'Cannot find child: {find}')
+
+
+class CurrentNodeNotFound(PaginatorException):
+    """Exception raised when current node of :class:`PageTreeController` cannot be found"""
+
+    def __init__(self):
+        super().__init__('Current node of PageTreeController cannot be found')
+
+
+class PageDataException(PaginatorException):
+    pass
+
+
+class DisplayDataNotFound(PageDataException):
+
+    def __init__(self):
+        super().__init__('Display Data Not Found')

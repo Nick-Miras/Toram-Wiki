@@ -16,4 +16,5 @@ class Grams:  # n word grams
 
 
 def remove_underscores(string: str) -> str:
-    return ' '.join(string.split('_')).strip()
+    cleaned_string = ' '.join(string.split('_')).strip()
+    return f'_{cleaned_string}' if string.startswith('_') else cleaned_string

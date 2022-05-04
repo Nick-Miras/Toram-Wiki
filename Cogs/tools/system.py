@@ -1,77 +1,63 @@
 import discord
 import pymongo.errors
 from discord.ext import commands
+from pymongo.results import DeleteResult
+from pymongo.results import InsertManyResult
 
-from Utils.database import Database
-
-
-def get_guild_document(guild_id: int) -> dict:
-    """
-    This function returns the database document for initializing new Discord Servers that were added
-
-    :param guild_id: :class: `int` This is the id of the guild
-    """
-    assert isinstance(guild_id, int)
-    document = {'_id': guild_id,
-                'prefix': '.',
-                'exempted': False
-                }
-    return document
+from Utils.dataclasses.guild import Guild
+from database import get_mongodb_client, mongo_collection
+from database.models import WhiskeyDatabase
 
 
-# TODO: Remove PRINT Statements
+#  TODO: Add Logging
+class GuildDatabase:
+
+    def __init__(self):
+        self.collection = WhiskeyDatabase(get_mongodb_client()).discord_guilds
+
+    def add(self, guilds: list[Guild]) -> InsertManyResult:
+        return self.collection.insert_many([guild.dict(by_alias=True) for guild in guilds])
+
+    def remove(self, guild_ids: list[int]) -> DeleteResult:
+        return self.collection.delete_many({'_id': {'$in': guild_ids}})
+
+
 class System(commands.Cog, name='system'):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
+        self.collection: mongo_collection = WhiskeyDatabase(get_mongodb_client()).discord_guilds
 
-    @staticmethod
-    async def add_guilds(bot: commands.Bot):
-        """This function checks if a guild hasn't been added to the database yet
+    def add_not_added_guilds(self, bot: commands.Bot):
+        guilds_not_added: list[Guild] = [
+            Guild(_id=guild.id) for guild in bot.guilds if self.collection.count_documents({'_id': guild.id}) == 0
+        ]
+        GuildDatabase().add(guilds_not_added)
+
+    def remove_invalid_guild_in_database(self, bot: commands.Bot):
+        """This functions checks whether a guild in the database isn't a joined guild and removes them
         """
-        # a list of Guild ID's that have already been added
-        already_added: list[int] = [guild['_id'] for guild in Database.GUILDS.find()]
-
-        not_added_to_database: list[discord.Guild] = [guild for guild in bot.guilds if guild.id not in already_added]
-        for guild in not_added_to_database:
-            Database.GUILDS.insert_one(get_guild_document(guild.id))
-            print(f"Added: {guild.id}")
-
-    @staticmethod
-    async def remove_guilds(bot: commands.Bot):
-        """This functions checks whether a guild in the database isn't a joined guild
-        """
-        # The exempted guilds that the bot shouldn't delete from the database
-        exempted_guilds = [guild['_id'] for guild in Database.GUILDS.find({'exempted': True})]
-        added: list[int] = [guild['_id'] for guild in Database.GUILDS.find()]
+        added_that_are_not_exempted: list[int] = [guild['_id'] for guild in self.collection.find({'exempted': False})]
 
         # current joined guilds of the bot
-        joined: list[int] = [guild.id for guild in bot.guilds]
-        not_joined: list[int] = [guild_id for guild_id in added if guild_id not in joined]
-
-        for ids in not_joined:
-            if ids in exempted_guilds:
-                print(f'Exempted: {ids}')
-                continue
-            Database.GUILDS.delete_one({'_id': ids})
-            print(f"Removed: {ids}")
+        not_joined: list[int] = [guild.id for guild in bot.guilds if guild.id not in added_that_are_not_exempted]
+        GuildDatabase().remove(not_joined)
 
     @commands.Cog.listener()
-    async def on_guild_join(self, guild):
+    async def on_guild_join(self, guild: discord.Guild):
         try:
-            document = get_guild_document(guild.id)
-            Database.GUILDS.insert_one(document)
+            self.collection.insert_one(Guild(_id=guild.id).dict(by_alias=True))
         except pymongo.errors.DuplicateKeyError:
             pass
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        Database.GUILDS.delete_one({"_id": guild.id})
+        self.collection.delete_one({"_id": guild.id})
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.remove_guilds(self.bot)
-        await self.add_guilds(self.bot)
+        self.remove_invalid_guild_in_database(self.bot)
+        self.add_not_added_guilds(self.bot)
 
 
-def setup(bot):
-    bot.add_cog(System(bot))
+async def setup(bot):
+    await bot.add_cog(System(bot))

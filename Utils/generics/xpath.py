@@ -1,4 +1,5 @@
 """Xpath Helper Functions"""
+from scrapy import Selector
 
 
 def normalize_space(string: str) -> str:
@@ -19,3 +20,7 @@ def get_non_empty_string(xpath: str) -> str:
     xpath for extracting text from a selector that return multiple text results
     """
     return normalize_space(f'{xpath}[string-length({normalize_space(".")})>1]')
+
+
+def extract_string_from_node(container: Selector) -> str:
+    return container.xpath(normalize_space('.')).get()

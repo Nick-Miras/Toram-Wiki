@@ -1,15 +1,17 @@
 import os
 import re
+from typing import Iterable
 
 import discord
 from discord.ext import commands
 
-from Utils.database import Database
+from database import get_mongodb_client
+from database.models import WhiskeyDatabase
 
 
-def cog_loader(bot):  # Loads all the Cogs
-    skip_files = ()  # DO NOT LOAD THIS FILES
-    file_paths = [r for r, _, _ in os.walk('./Cogs') if 'pycache' not in r]
+async def load_cogs(bot: commands.Bot):  # Loads all the Cogs
+    skip_files = ('exceptions', 'system')  # DO NOT LOAD THIS FILES
+    file_paths = [r for r, _, _ in os.walk('./Cogs') if 'cache' not in r]
 
     for path in file_paths:
         path_name = re.sub(r'[\\/]', '.', path[2:])
@@ -17,45 +19,59 @@ def cog_loader(bot):  # Loads all the Cogs
             if filename.endswith('.py') and not filename.startswith(skip_files):
                 extension = f'{path_name}.{filename[:-3]}'
                 try:
-                    bot.load_extension(extension)
+                    await bot.load_extension(extension)
                 except commands.NoEntryPointError:
                     print(f'NoEntryPoint: {extension}')
 
 
 class MyBot(commands.Bot):
-    def __init__(self):
+    def __init__(self, application_id: int = None, is_test: bool = False):
         mentionable = discord.AllowedMentions(
             replied_user=False
         )
-
+        self.is_test = is_test
         intents = discord.Intents.all()
         super().__init__(
             command_prefix=self.fetch_prefix,
             allowed_mentions=mentionable,
             intents=intents,
-            help_command=None
+            help_command=None,
+            application_id=application_id
         )
-
-        cog_loader(self)
+        if not hasattr(self, 'uptime'):
+            self.uptime = discord.utils.utcnow()
 
     @staticmethod
     def fetch_prefix(bot: commands.Bot, message: discord.Message):
         def inner() -> str:
             if message.guild is None:
                 return '$'  # default prefix
-            return str(Database.GUILDS.find_one({'_id': message.guild.id})['prefix'])
+            return str(
+                WhiskeyDatabase(get_mongodb_client()).discord_guilds.find_one({'_id': message.guild.id})['prefix']
+            )
         return commands.when_mentioned_or(inner())(bot, message)
 
+    async def command_sync(self, guilds: Iterable[int]):
+        for guild in guilds:
+            self.tree.copy_global_to(guild=discord.Object(guild))
+        await self.tree.sync()
+
+    async def setup_hook(self) -> None:
+        # guilds = list(guild['_id'] for guild in WhiskeyDatabase(get_mongodb_client()).discord_guilds.find({}))
+        # await self.command_sync(guilds)
+        await load_cogs(self)
+
     async def on_ready(self):
-        if not hasattr(self, 'uptime'):
-            self.uptime = discord.utils.utcnow()
+        await self.command_sync(guild.id for guild in self.guilds)
+
+        await self.remove_cog('system')
 
         await self.change_presence(activity=discord.Game(name=f'Toram | @mention_me'))
         print(f'Logged in as {self.user} (ID: {self.user.id})')
         print('------')
 
 
-bot = MyBot()
+bot = MyBot(application_id=int(os.environ['application_id']), is_test=bool(os.environ['is_test']))
 
 
 @bot.event
@@ -72,10 +88,4 @@ async def on_message(message: discord.Message):
     await bot.process_commands(message)
 
 
-try:
-    token = os.environ['TOKEN']
-except KeyError:
-    bot.remove_cog('system')
-    token = os.environ['TEST_TOKEN']
-
-bot.run(token)
+bot.run(os.environ['TOKEN'])

@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider        = "prisma-client-py"
+    interface       = "asyncio"
+    previewFeatures = ["mongodb"]
+}
+
+datasource db {
+    provider = "mongodb"
+    url      = env("MONGOCLIENT")
+}
+
+model Guilds {
+    id       String  @id @default(auto()) @map("_id") @db.ObjectId
+    prefix   String  @default("T.")
+    exempted Boolean @default(false)
+
+    @@map("guilds")
+}
+
+model ItemLeaf {
+    id           String      @id @default(auto()) @map("_id") @db.ObjectId
+    name         String
+    market_value MarketValue @map("market value")
+    image        String?
+    location     Location[]
+    uses         Uses[]
+    upgrades     Upgrades
+    stats        Stats[]
+
+    @@map("items.leaf")
+}
+
+type IdStringPair {
+    id    String?
+    value String
+}
+
+type MarketValue {
+    sell     Int?
+    process  String?
+    duration DateTime?
+}
+
+type Location {
+    monster IdStringPair?
+    dye     String[]
+    map     IdStringPair?
+}
+
+type Uses {
+    type  String
+    items IdStringPair[]
+}
+
+type Materials {
+    amount Int
+    item   IdStringPair
+}
+
+type Recipe {
+    fee        Int?
+    set        Int
+    level      Int?
+    difficulty Int
+    materials  Materials[]
+}
+
+type Upgrades {
+    from IdStringPair[]
+    into IdStringPair[]
+}
+
+type Stats {
+    requirement WeaponType[]
+    attributes  Attribute[]
+}
+
+type Attribute {
+    name  String
+    value String
+}
+
+enum WeaponType {
+    HeavyArmor
+    LightArmor
+    DualSwords
+    Staff
+    MagicDevice
+    Bow
+    Shield
+    Event
+    Dagger
+    TwoHandedSword
+    OneHandedSword
+    Katana
+    Knuckle
+    Bowgun
+}

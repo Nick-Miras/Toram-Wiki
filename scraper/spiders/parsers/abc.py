@@ -4,42 +4,19 @@ using the composite design pattern
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum, auto
-from typing import Generator, Optional, TypeVar, Generic, Type, Any, TypedDict, Final, final
+from typing import Generator, Optional, Type, Any, Final, final, Union
 
-import scrapy
-from pydantic.generics import GenericModel as PydanticGenericModel
-from scrapy import Selector
-
-from Utils.types import SelectorType
+from Utils.dataclasses.abc import WikiBaseModel
 from Utils.generics import arrays
-from .container_paths import ContainerPaths
-from ..exceptions import BadArgument, InitializationError
-
-ResultType = TypeVar('ResultType')
-
-
-class ParserType(Enum):
-    Composite = auto()
-    Leaf = auto()
-
-
-class ParserInformation(TypedDict):
-    name: str
-    type: ParserType
+from Utils.types import SelectorType
+from scraper.spiders.converters import IDataclassFactory
+from scraper.spiders.exceptions import BadArgument, InitializationError
+from scraper.spiders.parsers.container_paths import ContainerPaths
+from scraper.spiders.parsers.models import ParserType, ParserInformation, ParserResults
 
 
 def parser_information_builder(parser: ParserLeaf) -> ParserInformation:
     return {'name': parser.name, 'type': parser.type}
-
-
-class ParserResults(PydanticGenericModel, Generic[ResultType]):
-    parser: ParserInformation
-    result: Optional[ResultType]
-
-
-class ParserResultWrapper(scrapy.Item):
-    results: list[ParserResults] = scrapy.Field()
 
 
 def parser_results_builder(cls: ParserLeaf, result: Any, type_var):
@@ -64,22 +41,25 @@ class BaseParser(ABC):
 
     def __new__(cls, *args, **kwargs):
         if getattr(cls, 'container_path', None) is None:
-            raise InitializationError(cls, 'attribute: container_path cannot be found')
+            raise InitializationError(cls, 'attribute: `container_path` cannot be found')
         if getattr(cls, 'type', None) is None:
-            raise InitializationError(cls, 'attribute: type cannot be found')
+            raise InitializationError(cls, 'attribute: `type` cannot be found')
         return super().__new__(cls)
 
-    def __init__(self, response: Selector, container_path: Type[ContainerPaths]):
-        self.response = response
+    def __init__(self, container_path: Type[ContainerPaths], converter: Optional[IDataclassFactory] = None):
         self.container_path = container_path
+        self.converter = converter
 
     @final
-    def parse(self) -> Generator[ParserResultWrapper, None, None]:
-        """The method that returns the values to the client"""
-        containers = self.response.xpath(self.container_path.get())
+    def parse(self, response) -> Generator[Union[list[ParserResults], WikiBaseModel], None, None]:
+        """The method that returns the results to the client"""
+        containers = response.xpath(self.container_path.get())
         for container in containers:
             if container:
-                yield ParserResultWrapper(results=self.get_result(container))
+                if self.converter is None:
+                    yield self.get_result(container)  # type: list[ParserResults]
+                else:
+                    yield self.converter.convert(self.get_result(container))  # type: WikiBaseModel
 
     @classmethod
     @abstractmethod  # protected method (if this was not python)
@@ -96,7 +76,7 @@ class CompositeParser(BaseParser, ABC):
         def generate() -> Generator[ParserResults, None, None]:
             for parser in cls.parsers:
                 yield parser.get_result(container)
-        return array.flatten(list(generate()))
+        return arrays.flatten(list(generate()))
 
     @classmethod
     def add_parser(cls, parser: Type[ParserLeaf]):  # override if possible

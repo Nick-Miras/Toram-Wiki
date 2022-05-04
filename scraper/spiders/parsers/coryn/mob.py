@@ -1,7 +1,7 @@
 from abc import ABC
 
-from .abc import ParserLeaf
-from .container_paths import MobPath
+from scraper.spiders.parsers.abc import ParserLeaf
+from scraper.spiders.parsers.container_paths import MobPath
 
 
 class MobParserLeaf(ParserLeaf, ABC):
