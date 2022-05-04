@@ -1,7 +1,6 @@
 __pycache__*/
-test*
+test*.py
 .*
 *.old
-!/.gitignore!/ToramWiki.code-workspace
-!/tests/
-!/ToramWiki.code-workspace
+tests/
+ToramWiki.code-workspace
