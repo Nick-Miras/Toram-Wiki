@@ -1,0 +1,7 @@
+NOTIFICATIONS = "https://cdn.discordapp.com/attachments/432408793998163968/823831128967348224/1616487022293.png"
+SUCCESSFUL = "https://cdn.discordapp.com/attachments/432408793998163968/805694947911008286/1612163017202.png"
+EXCLAMATION = "https://cdn.discordapp.com/attachments/432408793998163968/805694690879209482/error-flat.png"
+BANK = "https://image.flaticon.com/icons/png/512/2830/2830284.png"
+REAFFIRMATION = "https://image.flaticon.com/icons/png/512/2867/2867644.png"
+MONOCLE = "https://cdn.discordapp.com/attachments/432408793998163968/787508055410868269/1607826945317.png"
+SCROLL = "https://cdn.discordapp.com/attachments/432408793998163968/740200163330621450/20200804_185612.jpg"
