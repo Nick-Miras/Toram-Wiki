@@ -50,10 +50,9 @@ class MyBot(commands.Bot):
             )
         return commands.when_mentioned_or(inner())(bot, message)
 
-    async def command_sync(self, guilds: Iterable[int]):
+    async def copy_global_to(self, guilds: Iterable[int]):
         for guild in guilds:
             self.tree.copy_global_to(guild=discord.Object(guild))
-        await self.tree.sync()
 
     async def setup_hook(self) -> None:
         # guilds = list(guild['_id'] for guild in WhiskeyDatabase(get_mongodb_client()).discord_guilds.find({}))
@@ -61,14 +60,15 @@ class MyBot(commands.Bot):
         await load_cogs(self)
 
     async def on_ready(self):
-        await self.command_sync(guild.id for guild in self.guilds)
-
+        # await self.remove_cog('system')
+        # await self.copy_global_to(guild.id for guild in self.guilds)
+        await self.tree.sync()
         await self.change_presence(activity=discord.Game(name=f'Toram | @mention_me'))
         print(f'Logged in as {self.user} (ID: {self.user.id})')
         print('------')
 
 
-bot = MyBot(application_id=int(os.environ['application_id']))
+bot = MyBot(application_id=int(os.environ['APPLICATION_ID']))
 
 
 @bot.event
