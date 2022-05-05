@@ -25,11 +25,10 @@ async def load_cogs(bot: commands.Bot):  # Loads all the Cogs
 
 
 class MyBot(commands.Bot):
-    def __init__(self, application_id: int = None, is_test: bool = False):
+    def __init__(self, application_id: int = None):
         mentionable = discord.AllowedMentions(
             replied_user=False
         )
-        self.is_test = is_test
         intents = discord.Intents.all()
         super().__init__(
             command_prefix=self.fetch_prefix,
@@ -62,7 +61,6 @@ class MyBot(commands.Bot):
         await load_cogs(self)
 
     async def on_ready(self):
-        await self.remove_cog('system')
         await self.command_sync(guild.id for guild in self.guilds)
 
         await self.change_presence(activity=discord.Game(name=f'Toram | @mention_me'))
@@ -70,7 +68,7 @@ class MyBot(commands.Bot):
         print('------')
 
 
-bot = MyBot(application_id=int(os.environ['application_id']), is_test=bool(os.environ['is_test']))
+bot = MyBot(application_id=int(os.environ['application_id']))
 
 
 @bot.event
