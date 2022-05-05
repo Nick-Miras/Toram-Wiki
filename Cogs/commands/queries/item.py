@@ -1,6 +1,7 @@
 import textwrap
 from abc import ABC, abstractmethod
 from typing import TypeVar, Optional, Generator
+from uuid import UUID
 
 import discord
 from discord import Interaction, SelectOption
@@ -229,7 +230,8 @@ class ItemLeafPagePromiseNode(PageDataNodePromise[ItemLeaf]):
 class ItemDropdown(BetterSelectContainer):
 
     async def callback(self, interaction: Interaction):
-        self.controller.goto_child(self.values[0])
+        child_id, = self.values  # type: str
+        self.controller.goto_child(UUID(child_id))
 
 
 class ItemRootDisplayContent(ContentDisplay):
@@ -271,7 +273,7 @@ class ItemRootPaginatedItemDisplay(ItemsDisplay):
         controller = self.tree.controller
         children: list[PageDataTree] = self.tree.children
         select_options = [
-            SelectOption(label=f'{index}. {child.name.title()}', value=child.name)
+            SelectOption(label=f'{index}. {child.name.title()}', value=str(child.id))
             for index, child in enumerate(children, start=offset)
         ]
         select_container_data = SelectContainerData(placeholder='More Information...', options=select_options)
@@ -302,7 +304,7 @@ class ItemCompositeItemDisplay(ItemsDisplay):
         controller = self.tree.controller
         children: list[PageDataTree] = self.tree.children
         select_options = [
-            SelectOption(label=f'{index}. {child.name.title()}', value=child.name)
+            SelectOption(label=f'{index}. {child.name.title()}', value=str(child.id))
             for index, child in enumerate(children, start=1)
         ]
         select_container_data = SelectContainerData(placeholder='More Information...', options=select_options)

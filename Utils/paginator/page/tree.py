@@ -95,7 +95,9 @@ class PageTreeController:
         self.current: Optional[PageDataTree] = None
 
     def goto_parent(self):
-        if (parent := self.current.parent) is not None:
+        if (parent := self.current.get_parent()) is not None:
+            if isinstance(self.current, PageDataNodePromise):
+                self.current.children.clear()
             self.current = parent
 
     def goto_child(self, child):

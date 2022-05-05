@@ -37,6 +37,7 @@ class IPaginatorView(ui.View, ABC):
             if not allow:
                 return
 
+            await interaction.response.defer()
             await item.callback(interaction)
             await self.on_interaction(item, interaction)
         except Exception as e:
@@ -58,15 +59,9 @@ class PaginatorView(IPaginatorView):
 
     async def on_interaction(self, item: discord.ui.Item, interaction: discord.Interaction):
         """The method called when a user interacts with the :class:`ui.View`"""
-        await self.refresh(interaction)
+        await self.set_current_view_with(self.controller.current, self, interaction.message)
 
     @staticmethod
     async def set_current_view_with(tree: PageDataTree, view: IPaginatorView, message: discord.Message):
-        # use Protocol annotation for :param:`message`
         view.set_items(tree.get_items())
         await message.edit(**tree.get_content(), view=view)
-
-    async def refresh(self, interaction: Interaction):
-        await interaction.response.defer(ephemeral=True)
-        await self.set_current_view_with(self.controller.current, self, interaction.message)
-        # await webhook.delete()

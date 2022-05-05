@@ -62,9 +62,8 @@ class MyBot(commands.Bot):
         await load_cogs(self)
 
     async def on_ready(self):
-        await self.command_sync(guild.id for guild in self.guilds)
-
         await self.remove_cog('system')
+        await self.command_sync(guild.id for guild in self.guilds)
 
         await self.change_presence(activity=discord.Game(name=f'Toram | @mention_me'))
         print(f'Logged in as {self.user} (ID: {self.user.id})')
