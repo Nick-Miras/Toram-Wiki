@@ -178,13 +178,16 @@ class LevellingQueryCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.hybrid_command(name='level', aliases=['levelling'])
-    @app_commands.guild_only()
-    async def levelling_query(self, ctx: Ctx, level: Optional[int] = None):
+    @commands.command(aliases=('levelling', 'level'))
+    async def levelling_query_normal_command(self, ctx: Ctx, level: Optional[int] = None):
         if level is None:
             raise CmdError(f'> {ctx.prefix}{ctx.invoked_with} (level: number)')
-
         await client(ctx, level)
+
+    @app_commands.command(name='level')
+    async def levelling_query_app_command(self, interaction: discord.Interaction, level: int):
+        await interaction.response.defer()
+        await client(await self.bot.get_context(interaction), level)
 
 
 async def setup(bot: commands.Bot):

@@ -8,6 +8,7 @@ from discord import Interaction, SelectOption
 from discord import app_commands
 from discord.ext import commands
 
+from Cogs.exceptions import CmdError
 from Utils.constants import images, colors
 from Utils.dataclasses.item import ItemComposite, ItemLeaf
 from Utils.generics import split_by_max_character_limit, arrays
@@ -16,7 +17,7 @@ from Utils.paginator.buttons import GoLeft, GoRight, GoFirst, GoLast, BetterSele
 from Utils.paginator.page import PageDataNode, PageDataNodePromise, PageDataTree, ContentDisplay, ItemsDisplay, \
     TreeInformation, DisplayData, PageTreeController, PaginatorView
 from database import get_mongodb_client
-from database.command.read import EdgeGramSearch, TriGramSearch
+from database.command.read import TriGramSearch
 from database.models import WhiskeyDatabase, QueryInformation
 
 D = TypeVar('D')
@@ -364,21 +365,27 @@ async def client(ctx: commands.Context, query_string: str):
 
 
 class ItemQueryCommands(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command()
-    @app_commands.guild_only()
-    async def item(self, ctx: commands.Context, *, query: str):
+    @commands.command(name='item')
+    async def item_normal_command(self, ctx: commands.Context, *, query: Optional[str] = None):
+        if query is None:
+            raise CmdError(f'> {ctx.prefix}{ctx.invoked_with} (item: word)')
         await client(ctx, query)
 
-    @item.autocomplete('query')
-    async def item_autocomplete(self, interation: Interaction, current: str) -> list[app_commands.Choice[str]]:
-        items_composite = WhiskeyDatabase(get_mongodb_client()).items_composite
-        raw_results: list[dict] = list(
-            EdgeGramSearch().query(QueryInformation(collection=items_composite, to_search=current))
-        )[0:5]
-        return [app_commands.Choice(name=match, value=match) for match in (result['name'] for result in raw_results)]
+    @app_commands.command(name='item')
+    async def item_app_command(self, interaction: Interaction, query: str):
+        await interaction.response.defer()
+        await client(await self.bot.get_context(interaction), query)
+
+    # @item_app_command.autocomplete('query')
+    # async def item_autocomplete(self, interation: Interaction, current: str) -> list[app_commands.Choice[str]]:
+    #     items_composite = WhiskeyDatabase(get_mongodb_client()).items_composite
+    #     raw_results: list[dict] = list(
+    #         EdgeGramSearch().query(QueryInformation(collection=items_composite, to_search=current))
+    #     )[0:5]
+    #     return [app_commands.Choice(name=match, value=match) for match in (result['name'] for result in raw_results)]
 
 
 async def setup(bot: commands.Bot):

@@ -10,7 +10,7 @@ from database.models import WhiskeyDatabase
 
 
 async def load_cogs(bot: commands.Bot):  # Loads all the Cogs
-    skip_files = ('exceptions', 'system')  # DO NOT LOAD THIS FILES
+    skip_files = ('exceptions',)  # DO NOT LOAD THIS FILES
     file_paths = [r for r, _, _ in os.walk('./Cogs') if 'cache' not in r]
 
     for path in file_paths:
@@ -55,13 +55,11 @@ class MyBot(commands.Bot):
             self.tree.copy_global_to(guild=discord.Object(guild))
 
     async def setup_hook(self) -> None:
-        # guilds = list(guild['_id'] for guild in WhiskeyDatabase(get_mongodb_client()).discord_guilds.find({}))
-        # await self.command_sync(guilds)
         await load_cogs(self)
+        # guilds = list(guild['_id'] for guild in WhiskeyDatabase(get_mongodb_client()).discord_guilds.find({}))
 
     async def on_ready(self):
-        # await self.remove_cog('system')
-        # await self.copy_global_to(guild.id for guild in self.guilds)
+        await self.copy_global_to(guild.id for guild in self.guilds)
         await self.tree.sync()
         await self.change_presence(activity=discord.Game(name=f'Toram | @mention_me'))
         print(f'Logged in as {self.user} (ID: {self.user.id})')
