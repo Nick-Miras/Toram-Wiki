@@ -31,7 +31,8 @@ class System(commands.Cog, name='system'):
         guilds_not_added: list[Guild] = [
             Guild(_id=guild.id) for guild in bot.guilds if self.collection.count_documents({'_id': guild.id}) == 0
         ]
-        GuildDatabase(collection=self.collection).add(guilds_not_added)
+        if guilds_not_added:
+            GuildDatabase(collection=self.collection).add(guilds_not_added)
 
     def remove_invalid_guild_in_database(self, bot: commands.Bot):
         """This functions checks whether a guild in the database isn't a joined guild and removes them
@@ -40,7 +41,8 @@ class System(commands.Cog, name='system'):
 
         # current joined guilds of the bot
         not_joined: list[int] = [guild.id for guild in bot.guilds if guild.id not in added_that_are_not_exempted]
-        GuildDatabase(collection=self.collection).remove(not_joined)
+        if not_joined:
+            GuildDatabase(collection=self.collection).remove(not_joined)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
