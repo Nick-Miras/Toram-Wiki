@@ -46,7 +46,7 @@ def split_by_max_character_limit(lst: list[str]) -> list[list[str]]:
         nonlocal current_string_length
         current_string_length += len(string)
         if current_string_length >= 1024:
-            current_string_length = 0
+            current_string_length = len(string)
             return True
         return False
     return split_by_condition(lst, chunking_condition)

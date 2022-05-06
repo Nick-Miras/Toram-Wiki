@@ -115,11 +115,10 @@ class DisplayItemLeaf(IDisplayItemLeaf):
                     if map_ := location["map"]:
                         yield f'**Map**: {map_[1] if map_ else ""}'
                     yield '\n'
-
                 yield '\n'.join(get_location_group())
 
         for string_group in split_by_max_character_limit(list(get_location())):  # type: list[str]
-            embed.add_field(name='Location:', value='\n'.join(string_group), inline=False)
+            embed.add_field(name='Location:', value=''.join(string_group), inline=False)
 
     def set_recipe(self, embed: discord.Embed) -> None:
         recipe = self.item.recipe
@@ -146,7 +145,7 @@ class DisplayItemLeaf(IDisplayItemLeaf):
             for uses_dict in self.item.uses:
                 yield f'**{uses_dict["type"]}**:'
                 for item in uses_dict["items"]:
-                    yield item
+                    yield item[1]
 
         for index, string_group in enumerate(split_by_max_character_limit(list(get_uses()))):
             if index == 0:
@@ -332,7 +331,7 @@ def query_item(query: str) -> Optional[list[dict]]:
 
 async def client(ctx: commands.Context, query_string: str):
     if (matches := query_item(query_string)) is None:
-        return
+        raise CmdError('Item Not Found!', should_use_embed=True)
 
     controller = PageTreeController()
     page_item_composite = [

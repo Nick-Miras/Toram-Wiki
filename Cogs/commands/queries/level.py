@@ -141,8 +141,10 @@ def sort_by_mob_hierachy(mob_information: LevellingPagePromiseNode):
 
 
 async def client(ctx: Ctx, level: int):
+    if len(scraped := list(scrape(level))) < 1:
+        raise CmdError('Level Not Found!', should_use_embed=True)
+
     controller = PageTreeController()
-    scraped: list[LevellingInformation] = list(scrape(level))
     data_by_mob_type: dict[str, list[list[LevellingInformation]]] = {
         mob_type: arrays.split_by_chunk([datum for datum in scraped if datum.mob_type == mob_type], 5)
         for mob_type in set(datum.mob_type for datum in scraped)
