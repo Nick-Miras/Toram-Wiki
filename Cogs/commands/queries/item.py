@@ -92,8 +92,8 @@ class DisplayItemLeaf(IDisplayItemLeaf):
     def set_stats(self, embed: discord.Embed) -> None:
         def generate_stats():
             for stat in self.item.stats:
-                if (requirement := stat['requirement']) is not None:
-                    requirement_string = f'{", ".join(_.value for _ in requirement)} only:'
+                if (requirement := stat['requirement']) is not None:  # type: Optional[list[str]]
+                    requirement_string = f'{", ".join(requirement)} only:'
                     yield requirement_string
                 for name, value in stat['attributes']:
                     yield f'{name} **{value}**'
@@ -325,7 +325,9 @@ class ItemLeafItemDisplay(ItemsDisplay):
 
 def query_item(query: str) -> Optional[list[dict]]:
     items_composite = WhiskeyDatabase(get_mongodb_client()).items_composite
-    matches: list[dict] = list(TriGramSearch().query(QueryInformation(collection=items_composite, to_search=query)))
+    matches: list[dict] = list(
+        TriGramSearch().query(QueryInformation(collection=items_composite, to_search=query), limit=25)
+    )
     if len(matches) > 0:
         return matches
 

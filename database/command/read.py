@@ -9,7 +9,7 @@ from database.models import QueryInformation
 class SearchStrategy(ABC):
 
     @abstractmethod
-    def query(self, query: QueryInformation, limit: int = 100) -> CommandCursor:
+    def query(self, query: QueryInformation, *, limit: int = 100) -> CommandCursor:
         pass
 
 
@@ -47,7 +47,7 @@ class EdgeGramSearch(SearchStrategy):
 
 class TriGramSearch(SearchStrategy):
 
-    def query(self, query: QueryInformation, limit: int = 100) -> CommandCursor:
+    def query(self, query: QueryInformation, *, limit: int = 100) -> CommandCursor:
         return query.collection.aggregate([
             {
                 '$search': {

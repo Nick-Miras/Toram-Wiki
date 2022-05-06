@@ -12,8 +12,6 @@ class WikiBaseModel(PydanticBaseModel):
 class WikiBaseConfig(BaseConfig):
     arbitrary_types_allowed = True
     allow_mutation = False
-    # allow_population_by_field_name = True
-    # alias_generator = remove_underscores
     extra = Extra.ignore
     use_enum_values = True
 
