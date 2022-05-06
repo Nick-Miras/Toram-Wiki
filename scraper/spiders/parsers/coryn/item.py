@@ -5,7 +5,7 @@ from typing import Optional, Generator
 from pydantic import HttpUrl
 
 from Utils.dataclasses.item import MarketValueDict, MaterialsDict, RecipeDict, LocationDict, UsesDict, StatsDict, \
-    RequirementType, get_requirement_type, ItemType, get_item_type, RequirementTypeSequence
+    get_requirement_type, ItemType, get_item_type, RequirementTypeSequence
 from Utils.generics import arrays
 from Utils.generics.numbers import try_int, extract_integer_from, convert_to_type_if_not_none
 from Utils.generics.xpath import normalize_space, substring_before, extract_string_from_node
@@ -355,22 +355,19 @@ class StatsParser(ItemParserLeaf):
     @classmethod
     def generate_stats_dict(cls, container: SelectorType) -> Generator[StatsDict, None, None]:
         requirement_attribute_pair = list(cls.fetch_attributes(container))
-        requirements: list[tuple[RequirementType]] = arrays.remove_duplicates(
-            convert_to_type_if_not_none(requirement, tuple)
-            for requirement, _ in requirement_attribute_pair
-        )
-        default_stats_dict: StatsDict = {
-            'requirement': None,
-            'attributes': []
-        }
-        import copy
+        requirements: list[RequirementTypeSequence] = [
+            convert_to_type_if_not_none(element, list)
+            for element in
+            arrays.remove_duplicates(
+                convert_to_type_if_not_none(element[0], tuple) for element in requirement_attribute_pair
+            )
+        ]
         for requirement in requirements:
-            current_stats_dict = copy.deepcopy(default_stats_dict)
-            current_stats_dict['requirement'] = convert_to_type_if_not_none(requirement, set)
+            attributes = []
             for req, attribute in requirement_attribute_pair:
                 if requirement == req:
-                    current_stats_dict['attributes'].append(attribute)
-            yield current_stats_dict
+                    attributes.append(attribute)
+            yield StatsDict(requirement=requirement, attributes=attributes)
 
     @classmethod
     @return_parser_results(list[StatsDict])

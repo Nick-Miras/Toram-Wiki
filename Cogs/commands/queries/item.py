@@ -83,7 +83,7 @@ class IDisplayItemLeaf(ABC):
 class DisplayItemLeaf(IDisplayItemLeaf):
 
     def set_market_value(self, embed: discord.Embed) -> None:
-        for key, value in self.item.market_value.items():
+        for key, value in dict(self.item.market_value).items():
             embed.add_field(name=key.capitalize(), value=value, inline=False)
 
     def set_image(self, embed: discord.Embed) -> None:
@@ -92,10 +92,10 @@ class DisplayItemLeaf(IDisplayItemLeaf):
     def set_stats(self, embed: discord.Embed) -> None:
         def generate_stats():
             for stat in self.item.stats:
-                if (requirement := stat['requirement']) is not None:  # type: Optional[list[str]]
+                if (requirement := stat.requirement) is not None:
                     requirement_string = f'{", ".join(requirement)} only:'
                     yield requirement_string
-                for name, value in stat['attributes']:
+                for name, value in stat.attributes:
                     yield f'{name} **{value}**'
 
         for index, string_group in enumerate(split_by_max_character_limit(list(generate_stats()))):
@@ -108,11 +108,11 @@ class DisplayItemLeaf(IDisplayItemLeaf):
         def get_location() -> Generator[str, None, None]:
             for location in self.item.location:
                 def get_location_group() -> Generator[str, None, None]:
-                    if monster := location["monster"]:
+                    if monster := location.monster:
                         yield f'**Monster**: {monster[1] if monster else ""}'
-                    if dye := location["dye"]:
+                    if dye := location.dye:
                         yield f'**Dye**: {dye}'
-                    if map_ := location["map"]:
+                    if map_ := location.map:
                         yield f'**Map**: {map_[1] if map_ else ""}'
                     yield '\n'
                 yield '\n'.join(get_location_group())
@@ -125,14 +125,13 @@ class DisplayItemLeaf(IDisplayItemLeaf):
 
         def get_recipe():
             yield textwrap.dedent(f"""\
-            Fee: {recipe["fee"]}
-            Set: {recipe["set"]}
-            Level: {recipe["level"]}
-            Difficulty: {recipe["difficulty"]}
-            Materials:
-            """)
-            for material in recipe["materials"]:
-                yield textwrap.indent(f'x{material["amount"]} - {material["item"][1]}', '\t')
+            Fee: {recipe.fee}
+            Set: {recipe.set}
+            Level: {recipe.level}
+            Difficulty: {recipe.difficulty}
+            Materials:""")
+            for material in recipe.materials:
+                yield textwrap.indent(f'x{material.amount} - {material.item[1]}', '\t')
 
         for index, string_group in enumerate(split_by_max_character_limit(list(get_recipe()))):
             if index == 0:
@@ -143,8 +142,8 @@ class DisplayItemLeaf(IDisplayItemLeaf):
     def set_uses(self, embed: discord.Embed) -> None:
         def get_uses():
             for uses_dict in self.item.uses:
-                yield f'**{uses_dict["type"]}**:'
-                for item in uses_dict["items"]:
+                yield f'**{uses_dict.type}**:'
+                for item in uses_dict.items:
                     yield item[1]
 
         for index, string_group in enumerate(split_by_max_character_limit(list(get_uses()))):
@@ -154,10 +153,12 @@ class DisplayItemLeaf(IDisplayItemLeaf):
                 embed.add_field(name='\u200b', value='\n'.join(string_group), inline=False)
 
     def set_upgrades(self, embed: discord.Embed) -> None:
-        upgrades_into = self.item.upgrades["into"]
+        upgrades_into = self.item.upgrades.upgrades_into
         upgrades_into_string = ", ".join(id_string_pair[1] for id_string_pair in upgrades_into) if upgrades_into else ''
-        upgrades_from = self.item.upgrades["from"]
+        upgrades_from = self.item.upgrades.upgrades_from
         upgrades_from_string = ", ".join(id_string_pair[1] for id_string_pair in upgrades_from) if upgrades_from else ''
+        if not upgrades_from_string and not upgrades_into_string:
+            return
         embed.add_field(
             name='Upgrades',
             value=f'Into: {upgrades_into_string}\nFrom: {upgrades_from_string}',

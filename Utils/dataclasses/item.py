@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TypedDict, Optional, TypeAlias
+from typing import Optional, TypeAlias
 
 from bson import ObjectId
 from pydantic import HttpUrl, Field, validator
@@ -174,18 +174,18 @@ def get_item_type(partial_type: str) -> Optional[ItemType]:
         return
 
 
-class MarketValueDict(TypedDict):
+class MarketValueDict(WikiBaseModel):
     sell: OptionalInt
     process: OptionalStr
     duration: OptionalStr
 
 
-class MaterialsDict(TypedDict):
+class MaterialsDict(WikiBaseModel):
     amount: int
     item: IdStringPair
 
 
-class RecipeDict(TypedDict):
+class RecipeDict(WikiBaseModel):
     fee: OptionalInt
     set: int
     level: OptionalInt
@@ -193,26 +193,25 @@ class RecipeDict(TypedDict):
     materials: list[MaterialsDict]
 
 
-class LocationDict(TypedDict):
+class LocationDict(WikiBaseModel):
     monster: Optional[IdStringPair]  # monster id and display string
     dye: Optional[tuple[StringOrInt, StringOrInt, StringOrInt]]
     map: Optional[IdStringPair]  # map id and display string
 
 
-class UsesDict(TypedDict):
+class UsesDict(WikiBaseModel):
     type: str
     items: list[IdStringPair]
 
 
-class StatsDict(TypedDict):
+class StatsDict(WikiBaseModel):
     requirement: Optional[RequirementTypeSequence]
     attributes: list[tuple[str, float]]
 
 
-UpgradesDict = TypedDict('UpgradesDict', {
-    'from': Optional[list[IdStringPair]],
-    'into': Optional[list[IdStringPair]]
-})
+class UpgradesDict(WikiBaseModel):
+    upgrades_from: Optional[list[IdStringPair]] = Field(..., alias='from')
+    upgrades_into: Optional[list[IdStringPair]] = Field(..., alias='into')
 
 
 class ItemLeaf(WikiBaseModel):
@@ -244,9 +243,6 @@ class ItemCompositeLeaf(WikiBaseModel):
     def to_object_id(cls, value):
         return value or ObjectId()
 
-    class Config(WikiBaseConfig):
-        pass
-
 
 class ItemComposite(WikiBaseModel):
     item_composite_id: Optional[IdType] = Field(default_factory=ObjectId, alias='_id')
@@ -256,6 +252,3 @@ class ItemComposite(WikiBaseModel):
     @validator('item_composite_id')
     def to_object_id(cls, value):
         return value or ObjectId()
-
-    class Config(WikiBaseConfig):
-        pass

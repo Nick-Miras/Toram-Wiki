@@ -5,15 +5,16 @@ from pydantic import BaseModel as PydanticBaseModel, BaseConfig, Extra
 from scraper.spiders.parsers.models import ParserResults, ParserResultWrapper
 
 
-class WikiBaseModel(PydanticBaseModel):
-    pass
-
-
 class WikiBaseConfig(BaseConfig):
     arbitrary_types_allowed = True
     allow_mutation = False
     extra = Extra.ignore
     use_enum_values = True
+
+
+class WikiBaseModel(PydanticBaseModel):
+    class Config(WikiBaseConfig):
+        pass
 
 
 def dataclass_factory(item: ParserResultWrapper, model: Type[WikiBaseModel]) -> WikiBaseModel:
