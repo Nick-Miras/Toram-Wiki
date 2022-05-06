@@ -3,8 +3,11 @@ import re
 from typing import Iterable
 
 import discord
+from discord import Interaction
+from discord.app_commands import CommandTree, AppCommandError
 from discord.ext import commands
 
+from Utils.discord.error_handling.interaction_error import OnInteractionError
 from database import get_mongodb_client
 from database.models import WhiskeyDatabase
 
@@ -24,6 +27,15 @@ async def load_cogs(bot: commands.Bot):  # Loads all the Cogs
                     print(f'NoEntryPoint: {extension}')
 
 
+class MyTree(CommandTree):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        super(MyTree, self).__init__(client=bot)
+
+    async def on_error(self, interaction: Interaction, error: AppCommandError) -> None:
+        await (await OnInteractionError(self.bot, interaction, error).get_handler())
+
+
 class MyBot(commands.Bot):
     def __init__(self, application_id: int = None):
         mentionable = discord.AllowedMentions(
@@ -35,6 +47,7 @@ class MyBot(commands.Bot):
             allowed_mentions=mentionable,
             intents=intents,
             help_command=None,
+            tree_cls=MyTree,
             application_id=application_id
         )
         if not hasattr(self, 'uptime'):
@@ -56,7 +69,6 @@ class MyBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         await load_cogs(self)
-        # guilds = list(guild['_id'] for guild in WhiskeyDatabase(get_mongodb_client()).discord_guilds.find({}))
 
     async def on_ready(self):
         await self.copy_global_to(guild.id for guild in self.guilds)

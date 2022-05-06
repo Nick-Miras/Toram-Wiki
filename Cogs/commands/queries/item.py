@@ -251,7 +251,7 @@ class ItemRootPaginatedDisplayContent(ContentDisplay):
         offset = (current_page * 5) + 1
         children: list[PageDataTree] = self.tree.children
         children_as_string: list[str] = [
-            f'> **{index}. {child.name.title()}**' for index, child in enumerate(children, start=offset)
+            f'> **{index}. {child.name}**' for index, childF in enumerate(children, start=offset)
         ]
         embed = discord.Embed(
             colour=colors.BRIGHT_GREEN,
@@ -273,7 +273,7 @@ class ItemRootPaginatedItemDisplay(ItemsDisplay):
         controller = self.tree.controller
         children: list[PageDataTree] = self.tree.children
         select_options = [
-            SelectOption(label=f'{index}. {child.name.title()}', value=str(child.id))
+            SelectOption(label=f'{index}. {child.name}', value=str(child.id))
             for index, child in enumerate(children, start=offset)
         ]
         select_container_data = SelectContainerData(placeholder='More Information...', options=select_options)
@@ -374,6 +374,8 @@ class ItemQueryCommands(commands.Cog):
         await client(ctx, query)
 
     @app_commands.command(name='item')
+    @app_commands.describe(query='The item to search for')
+    @app_commands.checks.bot_has_permissions(send_messages=True)
     async def item_app_command(self, interaction: Interaction, query: str):
         await interaction.response.defer()
         await client(await self.bot.get_context(interaction), query)
@@ -382,7 +384,7 @@ class ItemQueryCommands(commands.Cog):
     # async def item_autocomplete(self, interation: Interaction, current: str) -> list[app_commands.Choice[str]]:
     #     items_composite = WhiskeyDatabase(get_mongodb_client()).items_composite
     #     raw_results: list[dict] = list(
-    #         EdgeGramSearch().query(QueryInformation(collection=items_composite, to_search=current))
+    #         EdgeGramSearch().query(QueryInformation(collection=items_composite, to_search=current), limit=5)
     #     )[0:5]
     #     return [app_commands.Choice(name=match, value=match) for match in (result['name'] for result in raw_results)]
 

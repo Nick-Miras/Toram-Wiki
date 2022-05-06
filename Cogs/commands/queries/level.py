@@ -68,6 +68,7 @@ class LevellingChildContent(ContentDisplay):
             Experience Earned:
             """)
             embed.add_field(name=datum.mob_information[1], value=f'```{description}{exp_earned}```', inline=False)
+        embed.set_footer(text='Credits: coryn.club')
         return to_message_data(embed)
 
 
@@ -88,6 +89,7 @@ class LevellingChildItems(ItemsDisplay):
 class LevellingRootContent(ContentDisplay):
 
     def get_data(self) -> D:
+        mob_types = list(child_of_root.name for child_of_root in self.tree.children)
         data_by_mob_type: dict[str, list[LevellingInformation]] = {
             mob_type: [
                 page_node for page_node in [
@@ -95,14 +97,12 @@ class LevellingRootContent(ContentDisplay):
                         root.children for root in self.tree.children if root.name == mob_type]
                 ]
             ][0]
-            for mob_type in set(child_of_root.name for child_of_root in self.tree.children)
+            for mob_type in mob_types
         }
 
         embed = discord.Embed()
         for mob_type, mobs in data_by_mob_type.items():  # type: str, list[LevellingPageNode[list[LevellingInformation]]]
             mob_data: list[LevellingInformation] = arrays.flatten(node.data for node in [mob for mob in mobs])
-            description = indent('\n'.join(
-                levelling_information.mob_information[1] for levelling_information in mob_data), '- ')
             embed.add_field(name=mob_type.title(), value=f'Number of Mobs: {len(mob_data)}', inline=False)
 
         return to_message_data(embed)
@@ -130,8 +130,8 @@ def scrape(level: int) -> Generator[LevellingInformation, None, None]:
         yield result['result']
 
 
-def sort_by_mob_hierachy(mob_information: LevellingPagePromiseNode):
-    mob_type = mob_information.name.lower()
+def sort_by_mob_hierachy(mob_type: str):
+    mob_type = mob_type.lower()
     if mob_type == 'boss':
         return 1
     if mob_type == 'mini boss':
@@ -141,7 +141,7 @@ def sort_by_mob_hierachy(mob_information: LevellingPagePromiseNode):
 
 
 async def client(ctx: Ctx, level: int):
-    if len(scraped := list(scrape(level))) < 1:
+    if not (scraped := list(scrape(level))):
         raise CmdError('Level Not Found!', should_use_embed=True)
 
     controller = PageTreeController()
@@ -168,7 +168,7 @@ async def client(ctx: Ctx, level: int):
         controller=controller,
         information=TreeInformation(),
         display_data=DisplayData(items=LevellingRootItems, content=LevellingRootContent),
-        children=sorted(page_mob_type, key=sort_by_mob_hierachy)
+        children=sorted(page_mob_type, key=lambda node: sort_by_mob_hierachy(node.name))
     )
     controller.current = page_root
     view = PaginatorView(ctx, controller)
@@ -187,6 +187,8 @@ class LevellingQueryCommands(commands.Cog):
         await client(ctx, level)
 
     @app_commands.command(name='level')
+    @app_commands.describe(level='Your level')
+    @app_commands.checks.bot_has_permissions(send_messages=True)
     async def levelling_query_app_command(self, interaction: discord.Interaction, level: int):
         await interaction.response.defer()
         await client(await self.bot.get_context(interaction), level)

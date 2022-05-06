@@ -9,13 +9,13 @@ from database.models import QueryInformation
 class SearchStrategy(ABC):
 
     @abstractmethod
-    def query(self, query: QueryInformation) -> CommandCursor:
+    def query(self, query: QueryInformation, limit: int = 100) -> CommandCursor:
         pass
 
 
 class EdgeGramSearch(SearchStrategy):
 
-    def query(self, query: QueryInformation) -> CommandCursor:
+    def query(self, query: QueryInformation, *, limit: int = 100) -> CommandCursor:
         return query.collection.aggregate([
             {
                 '$search': {
@@ -40,14 +40,14 @@ class EdgeGramSearch(SearchStrategy):
                     'score': -1
                 }
             }, {
-                '$limit': 100
+                '$limit': limit
             }
         ])
 
 
 class TriGramSearch(SearchStrategy):
 
-    def query(self, query: QueryInformation) -> CommandCursor:
+    def query(self, query: QueryInformation, limit: int = 100) -> CommandCursor:
         return query.collection.aggregate([
             {
                 '$search': {
@@ -72,12 +72,12 @@ class TriGramSearch(SearchStrategy):
                     'score': -1
                 }
             }, {
-                '$limit': 100
+                '$limit': limit
             }
         ])
 
 
 class TitleSearch(SearchStrategy):
 
-    def query(self, query: QueryInformation) -> list[dict]:
+    def query(self, query: QueryInformation, limit: int = 100) -> list[dict]:
         ...
