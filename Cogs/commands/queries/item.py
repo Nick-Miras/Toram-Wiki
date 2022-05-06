@@ -251,7 +251,7 @@ class ItemRootPaginatedDisplayContent(ContentDisplay):
         offset = (current_page * 5) + 1
         children: list[PageDataTree] = self.tree.children
         children_as_string: list[str] = [
-            f'> **{index}. {child.name}**' for index, childF in enumerate(children, start=offset)
+            f'> **{index}. {child.name}**' for index, child in enumerate(children, start=offset)
         ]
         embed = discord.Embed(
             colour=colors.BRIGHT_GREEN,
@@ -282,6 +282,7 @@ class ItemRootPaginatedItemDisplay(ItemsDisplay):
             return [GoLeft(controller), GoRight(controller), dropdown]
         if sibling_number > 2:
             return [GoFirst(controller), GoLeft(controller), GoRight(controller), GoLast(controller), dropdown]
+        return [dropdown]
 
 
 class ItemCompositeDisplayContent(ContentDisplay):
