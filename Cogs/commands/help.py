@@ -13,7 +13,7 @@ class Help(commands.Cog):
         # main fields
         __fields = {
             f'{pfx}item': 'Command for searching information about Toram Items',
-            # f'{pfx}report': 'Command for reporting bugs to bot owner'
+            f'{pfx}level': 'Command for searching the most optimal monster for obtaining experience',
         }
         __admin_fields = {
             f'{pfx}set prefix': 'Sets the prefix'
