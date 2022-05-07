@@ -82,7 +82,7 @@ class LevellingChildItems(ItemsDisplay):
         if sibling_number == 2:
             return [GoBackTwice(controller), GoLeft(controller), GoRight(controller)]
         if sibling_number > 2:
-            return [GoBackTwice(controller), GoLeft(controller), GoRight(controller), GoFirst(controller),
+            return [GoBackTwice(controller), GoFirst(controller), GoLeft(controller), GoRight(controller),
                     GoLast(controller)]
 
 

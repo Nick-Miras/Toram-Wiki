@@ -15,6 +15,8 @@ D = TypeVar('D')  # datatype of data
 
 
 class PageDataTree(ABC, Generic[D]):
+    __slots__ = "id", "name", "controller", "data", "parent", "_display_data", "children"
+
     def __init__(self, *, controller: PageTreeController, information: TreeInformation,
                  display_data: Optional[display.DisplayData] = None,
                  children: Optional[list[PageDataTree]] = None,
@@ -82,7 +84,7 @@ class PageDataNodePromise(PageDataTree, ABC, Generic[D]):
 
     @staticmethod
     @abstractmethod
-    def generate_children_of(child: PageDataTree) -> PageDataTree:  # TODO: Create decorator class instead
+    def generate_children_of(child: PageDataTree) -> PageDataTree:
         """A method that generates the children of a PageDataNode and returns it
         Args:
             child:
@@ -91,6 +93,8 @@ class PageDataNodePromise(PageDataTree, ABC, Generic[D]):
 
 
 class PageTreeController:
+    __slots__ = "current", "view"
+
     def __init__(self):
         self.current: Optional[PageDataTree] = None
 
