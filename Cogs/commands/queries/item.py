@@ -87,7 +87,7 @@ class DisplayItemLeaf(IDisplayItemLeaf):
             embed.add_field(name=key.capitalize(), value=value, inline=False)
 
     def set_image(self, embed: discord.Embed) -> None:
-        embed.set_thumbnail(url=self.item.image)
+        embed.set_image(url=self.item.image)
 
     def set_stats(self, embed: discord.Embed) -> None:
         def generate_stats():
