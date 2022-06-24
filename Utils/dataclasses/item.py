@@ -62,18 +62,16 @@ class ItemType(Enum):
 
 def return_default_image(item_type: ItemType) -> str:
     match item_type:
-        # TODO: Finish Inserting URLs
-        # crystas
         case ItemType.ArmorCrysta:
-            return ""
+            return "https://cdn.discordapp.com/emojis/952712290828963902.webp?size=4096&quality=lossless"
         case ItemType.NormalCrysta:
-            return ""
+            return "https://cdn.discordapp.com/emojis/952712291160322129.webp?size=4096&quality=lossless"
         case ItemType.SpecialCrysta:
-            return ""
+            return "https://cdn.discordapp.com/emojis/677105475627515904.webp?size=4096&quality=lossless"
         case ItemType.WeaponCrysta:
-            return ""
+            return "https://cdn.discordapp.com/emojis/952712291118370826.webp?size=4096&quality=lossless"
         case ItemType.AdditionalCrysta:
-            return ""
+            return "https://cdn.discordapp.com/emojis/952712291093209148.webp?size=4096&quality=lossless"
         case ItemType.EnhancerCrystaRed:
             return ""
         case ItemType.EnhancerCrystaBlue:
@@ -112,9 +110,9 @@ def return_default_image(item_type: ItemType) -> str:
             return "https://cdn.discordapp.com/attachments/654287868612575263/788234432246448148/IMG_20201013_083854.png"
 
         # equipment
-        case ItemType.Special:
+        case ItemType.SpecialGear:
             return "https://cdn.discordapp.com/attachments/654287868612575263/788352419712860180/IMG_20201013_174953.png"
-        case ItemType.Additional:
+        case ItemType.AdditionalGear:
             return "https://cdn.discordapp.com/attachments/654287868612575263/788352419443769374/IMG_20201013_175047.png"
         case ItemType.Armor:
             return "https://cdn.discordapp.com/attachments/654287868612575263/788352420328767498/IMG_20201013_174251.png"

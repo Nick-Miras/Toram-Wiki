@@ -7,14 +7,17 @@ class Grams:  # n word grams
 
     @staticmethod
     def gram(string, n: int):  # incremental
-        for i in range(n, len(string) + 1):
-            yield string[i - n: i].lower()
+        """create grams of length n from string"""
+        for i in range(len(string) - n + 1):
+            yield string[i:i + n].lower()
 
     @classmethod
-    def trigram(cls, string):  # incremental
+    def trigram(cls, string):
         return cls.gram(string, 3)
 
 
 def remove_underscores(string: str) -> str:
-    cleaned_string = ' '.join(string.split('_')).strip()
-    return f'_{cleaned_string}' if string.startswith('_') else cleaned_string
+    """replace underscores from a string with whitespace if it does not start with an underscore"""
+    if string.startswith("_"):
+        return string
+    return string.replace("_", " ")

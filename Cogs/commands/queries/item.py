@@ -10,7 +10,7 @@ from discord.ext import commands
 
 from Cogs.exceptions import CmdError
 from Utils.constants import images, colors
-from Utils.dataclasses.item import ItemComposite, ItemLeaf
+from Utils.dataclasses.item import ItemComposite, ItemLeaf, return_default_image, get_item_type
 from Utils.generics import split_by_max_character_limit, arrays
 from Utils.generics.discord import to_message_data, send_with_paginator
 from Utils.paginator.buttons import GoLeft, GoRight, GoFirst, GoLast, BetterSelectContainer, SelectContainerData, GoBack
@@ -65,6 +65,9 @@ class IDisplayItemLeaf(ABC):
         embed.set_footer(text='Credits: coryn.club')
         if self.item.image:
             self.set_image(embed)
+        else:
+            embed.set_thumbnail(url=return_default_image(get_item_type(self.item.type)))
+
         if self.item.market_value:
             self.set_market_value(embed)
         if self.item.stats:
