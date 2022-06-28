@@ -168,7 +168,7 @@ class MonsterLeafDisplayMessageContent(MessageContentDisplay):
     def get_drops(drops: list[MonsterDrop]) -> Generator[str, None, None]:
         for drop in drops:
             display_string = f"""\
-            **Item**: {drop.name}
+            **Item**: {drop.name[1]}
             **Dye**: {drop.dye}
             
             """
@@ -180,6 +180,7 @@ class MonsterLeafDisplayMessageContent(MessageContentDisplay):
             colour=0xffd700
         )
         embed.set_author(name=data.name)
+        embed.set_thumbnail(url='https://cdn.discordapp.com/emojis/853086959723741195.webp?size=4096&quality=lossless')
         for field in [
             ('Level', data.level),
             ('Difficulty', data.difficulty),
