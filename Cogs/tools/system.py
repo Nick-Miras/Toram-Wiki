@@ -62,10 +62,10 @@ class System(commands.Cog, name='system'):
             self.remove_invalid_guild_in_database(self.bot)
             self.add_not_added_guilds(self.bot)
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(minutes=1)
     async def change_presence_every_minute(self):
         """changes the presence of the bot every minute with different description after every two minutes"""
-        if self.bot.uptime.minute % 2 == 0:
+        if discord.utils.utcnow().minute % 2 == 0:
             await self.bot.change_presence(activity=discord.Game(name=f'@me for help'))
         else:
             await self.bot.change_presence(activity=discord.Game(name=f'with {len(self.bot.guilds)} servers'))
