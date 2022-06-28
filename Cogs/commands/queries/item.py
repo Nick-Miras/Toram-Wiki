@@ -75,7 +75,7 @@ class IDisplayItemLeaf(ABC):
                 )
             )
         else:
-            embed.colour = 0x000000
+            embed.colour = 0x7289da
 
         if self.item.image:
             self.set_image(embed)
@@ -269,7 +269,7 @@ class ItemRootPaginatedDisplayMessageContent(MessageContentDisplay):
             f'> **{index}. {child.name}**' for index, child in enumerate(children, start=offset)
         ]
         embed = discord.Embed(
-            colour=0x000000,
+            colour=0x7289da,
             description='\n'.join(children_as_string)
         )
         embed.set_author(name='Results')
@@ -307,7 +307,7 @@ class ItemCompositeDisplayMessageContent(MessageContentDisplay):
             f'> **{index}. {child.name}**' for index, child in enumerate(children, start=1)
         ]
         embed = discord.Embed(
-            colour=0x000000,
+            colour=0x7289da,
             description='\n'.join(children_as_string)
         )
         embed.set_author(name=self.tree.name)

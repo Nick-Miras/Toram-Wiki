@@ -80,7 +80,7 @@ class MonsterRootPaginatedDisplayMessageContent(MessageContentDisplay):
             enumerate(children, start=offset)
         ]
         embed = discord.Embed(
-            colour=0x000000,
+            colour=0x7289da,
             description='\n'.join(children_as_string)
         )
         embed.set_author(name='Results')
@@ -129,7 +129,7 @@ class MonsterCompositeDisplayMessageContent(MessageContentDisplay):
             for index, child in enumerate(children, start=1)
         ]
         embed = discord.Embed(
-            colour=0x000000,
+            colour=0x7289da,
             description='\n'.join(children_as_string)
         )
         embed.set_author(name=self.tree.name)
