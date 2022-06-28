@@ -168,7 +168,7 @@ class MonsterLeafDisplayMessageContent(MessageContentDisplay):
     def get_drops(drops: list[MonsterDrop]) -> Generator[str, None, None]:
         for drop in drops:
             display_string = f"""\
-            **Item**: {drop.name}
+            **Item**: {drop.name[1]}
             **Dye**: {drop.dye}
             
             """
