@@ -7,7 +7,7 @@ from discord import app_commands, Interaction, SelectOption
 from discord.ext import commands
 
 from Cogs.exceptions import CmdError
-from Utils.constants import colors, images
+from Utils.constants import images
 from Utils.dataclasses.monster import MonsterLeaf, MonsterComposite, MonsterDrop
 from Utils.generics import arrays, split_by_max_character_limit
 from Utils.generics.discord import to_message_data, send_with_paginator
@@ -80,7 +80,7 @@ class MonsterRootPaginatedDisplayMessageContent(MessageContentDisplay):
             enumerate(children, start=offset)
         ]
         embed = discord.Embed(
-            colour=colors.BRIGHT_GREEN,
+            colour=0x000000,
             description='\n'.join(children_as_string)
         )
         embed.set_author(name='Results')
@@ -129,7 +129,7 @@ class MonsterCompositeDisplayMessageContent(MessageContentDisplay):
             for index, child in enumerate(children, start=1)
         ]
         embed = discord.Embed(
-            colour=colors.BRIGHT_GREEN,
+            colour=0x000000,
             description='\n'.join(children_as_string)
         )
         embed.set_author(name=self.tree.name)

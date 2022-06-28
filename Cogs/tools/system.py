@@ -57,8 +57,9 @@ class System(commands.Cog, name='system'):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.remove_invalid_guild_in_database(self.bot)
-        self.add_not_added_guilds(self.bot)
+        if self.bot.application_id == 876662819511218207:
+            self.remove_invalid_guild_in_database(self.bot)
+            self.add_not_added_guilds(self.bot)
 
     @tasks.loop(minutes=1)
     async def change_presence_every_minute(self):

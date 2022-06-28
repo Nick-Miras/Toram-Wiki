@@ -1,3 +1,4 @@
+import io
 from abc import ABC, abstractmethod
 from io import BytesIO
 from typing import Optional
@@ -151,18 +152,31 @@ class ErrorEmbed(EmbedModels):
         return embed
 
 
-def get_image_from_link(link: str) -> Optional[discord.File]:
+def get_image_from_link(link: str) -> io.BytesIO:
     """
-    Returns:
-        Optional[discord.File]
+    This function returns the image from the link provided
+    :param link: :class: `str` This is the link to the image
+    :return: :class: `io.BytesIO` This is the image in bytes
     """
-    if not link:
-        return
-    if not link.startswith('http'):
-        link = 'http:' + link
-    try:
-        response = requests.get(link)
-        if response.status_code == 200:
-            return discord.File(BytesIO(response.content), filename=link.split('/')[-1])
-    except Exception:
-        return
+    response = requests.get(link)
+    return BytesIO(response.content)
+
+
+def get_most_prominent_color_from_image(image: io.BytesIO) -> tuple:
+    """
+    This function returns the most prominent color from the image provided using colorthief
+    :param image: :class: `io.BytesIO` This is the image in bytes
+    :return: :class: `tuple` This is the color in RGB
+    """
+    from colorthief import ColorThief
+    color_thief = ColorThief(image)
+    return color_thief.get_color(quality=1)
+
+
+def rgb_tuple_to_discord_colour(rgb: tuple[int, int, int]) -> discord.Colour:
+    """
+    This function returns the discord colour from the rgb tuple
+    :param rgb: :class: `tuple` This is the rgb tuple
+    :return: :class: `discord.Colour` This is the discord colour
+    """
+    return discord.Colour.from_rgb(*rgb)

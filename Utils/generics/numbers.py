@@ -1,3 +1,4 @@
+import hashlib
 import re
 from typing import Union, Type, Optional, TypeVar
 
@@ -36,3 +37,7 @@ T = TypeVar('T')
 
 def convert_to_type_if_not_none(obj: T, object_type: Type, /) -> Optional[T]:
     return object_type(obj) if obj is not None else None
+
+
+def hash_int_using_sha256(num: int) -> str:
+    return hashlib.sha256(str(num).encode()).hexdigest()

@@ -13,13 +13,17 @@ from database.models import WhiskeyDatabase
 
 
 async def load_cogs(bot: commands.Bot):  # Loads all the Cogs
-    skip_files = ('exceptions',)  # DO NOT LOAD THIS FILES
+    skip_files = ('exceptions',)  # DO NOT LOAD THESE FILES
     file_paths = [r for r, _, _ in os.walk('./Cogs') if 'cache' not in r]
 
     for path in file_paths:
         path_name = re.sub(r'[\\/]', '.', path[2:])
         for filename in os.listdir(path):
-            if filename.endswith('.py') and not filename.startswith(skip_files):
+            if filename.endswith('.py'):
+                if filename.startswith(skip_files):
+                    print(f'Skipping {filename}')
+                    continue
+
                 extension = f'{path_name}.{filename[:-3]}'
                 try:
                     await bot.load_extension(extension)

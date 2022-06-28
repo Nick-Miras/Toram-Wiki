@@ -9,11 +9,12 @@ from discord import app_commands
 from discord.ext import commands
 
 from Cogs.exceptions import CmdError
-from Utils.constants import images, colors
+from Utils.constants import images
 from Utils.dataclasses.abc import get_item_type
 from Utils.dataclasses.item import ItemComposite, ItemLeaf, return_default_image
 from Utils.generics import split_by_max_character_limit, arrays
-from Utils.generics.discord import to_message_data, send_with_paginator
+from Utils.generics.discord import to_message_data, send_with_paginator, get_image_from_link, \
+    get_most_prominent_color_from_image, rgb_tuple_to_discord_colour
 from Utils.paginator.buttons import GoLeft, GoRight, GoFirst, GoLast, BetterSelectContainer, SelectContainerData, GoBack
 from Utils.paginator.page import PageDataNode, PageDataNodePromise, PageDataTree, MessageContentDisplay, \
     ButtonItemsDisplay, \
@@ -60,17 +61,24 @@ class IDisplayItemLeaf(ABC):
         pass
 
     def get_embed(self) -> discord.Embed:
-        embed = discord.Embed(
-            colour=0xffd700
-        )
+
+        embed = discord.Embed()
 
         embed.set_author(name=self.item.name, icon_url=images.SCROLL)
         embed.set_footer(text='Credits: coryn.club')
+
+        if image_link := return_default_image(get_item_type(self.item.type)):
+            embed.set_thumbnail(url=image_link)
+            embed.colour = rgb_tuple_to_discord_colour(
+                get_most_prominent_color_from_image(
+                    get_image_from_link(image_link)
+                )
+            )
+        else:
+            embed.colour = 0x000000
+
         if self.item.image:
             self.set_image(embed)
-        else:
-            embed.set_thumbnail(url=return_default_image(get_item_type(self.item.type)))
-
         if self.item.market_value:
             self.set_market_value(embed)
         if self.item.stats:
@@ -261,7 +269,7 @@ class ItemRootPaginatedDisplayMessageContent(MessageContentDisplay):
             f'> **{index}. {child.name}**' for index, child in enumerate(children, start=offset)
         ]
         embed = discord.Embed(
-            colour=colors.BRIGHT_GREEN,
+            colour=0x000000,
             description='\n'.join(children_as_string)
         )
         embed.set_author(name='Results')
@@ -299,7 +307,7 @@ class ItemCompositeDisplayMessageContent(MessageContentDisplay):
             f'> **{index}. {child.name}**' for index, child in enumerate(children, start=1)
         ]
         embed = discord.Embed(
-            colour=colors.BRIGHT_GREEN,
+            colour=0x000000,
             description='\n'.join(children_as_string)
         )
         embed.set_author(name=self.tree.name)
