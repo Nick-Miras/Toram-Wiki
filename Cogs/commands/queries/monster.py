@@ -15,7 +15,7 @@ from Utils.paginator.buttons import GoBack, BetterSelectContainer, SelectContain
 from Utils.paginator.page import PageDataNode, PageDataNodePromise, PageDataTree, TreeInformation, DisplayData, \
     ButtonItemsDisplay, MessageContentDisplay, PageTreeController, PaginatorView
 from database import get_mongodb_client
-from database.command.read import AutoCompleteSearch
+from database.command.read import TextSearch
 from database.indexes import AggregationIndexes
 from database.models import WhiskeyDatabase, QueryInformation
 
@@ -208,9 +208,9 @@ class ItemLeafItemDisplayButton(ButtonItemsDisplay):
 def query_monster(query: str) -> Optional[list[dict]]:
     monsters_composite_collection = WhiskeyDatabase(get_mongodb_client()).monsters_composite
     matches: list[dict] = list(
-        AutoCompleteSearch().query(
+        TextSearch().query(
             QueryInformation(collection=monsters_composite_collection, to_search=query),
-            AggregationIndexes.MonstersCompositeTriGram,
+            AggregationIndexes.MonstersCompositeString,
             limit=25
         )
     )

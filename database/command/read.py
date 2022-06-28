@@ -48,7 +48,34 @@ class AutoCompleteSearch(SearchStrategy):
         ])
 
 
-class TitleSearch(SearchStrategy):
+class TextSearch(SearchStrategy):
 
     def query(self, query: QueryInformation, index: AggregationIndexes, *, limit: int = 100) -> CommandCursor:
-        ...
+        return query.collection.aggregate([
+            {
+                '$search': {
+                    'index': index.value,
+                    'text': {
+                        'query': query.to_search,
+                        'path': 'name',
+                        'fuzzy': {
+                            'maxEdits': 2,
+                            'prefixLength': 1
+                        }
+                    }
+                }
+            }, {
+                '$addFields': {
+                    'score': {
+                        '$meta': 'searchScore'
+                    }
+                }
+
+            }, {
+                '$sort': {
+                    'score': -1
+                }
+            }, {
+                '$limit': limit
+            }
+        ])

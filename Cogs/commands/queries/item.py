@@ -19,7 +19,7 @@ from Utils.paginator.page import PageDataNode, PageDataNodePromise, PageDataTree
     ButtonItemsDisplay, \
     TreeInformation, DisplayData, PageTreeController, PaginatorView
 from database import get_mongodb_client
-from database.command.read import AutoCompleteSearch
+from database.command.read import TextSearch
 from database.indexes import AggregationIndexes
 from database.models import WhiskeyDatabase, QueryInformation
 
@@ -333,9 +333,9 @@ class ItemLeafItemDisplayButton(ButtonItemsDisplay):
 def query_item(query: str) -> Optional[list[dict]]:
     items_composite = WhiskeyDatabase(get_mongodb_client()).items_composite
     matches: list[dict] = list(
-        AutoCompleteSearch().query(
+        TextSearch().query(
             QueryInformation(collection=items_composite, to_search=query),
-            AggregationIndexes.ItemsCompositeTriGram,
+            AggregationIndexes.ItemsCompositeString,
             limit=25
         )
     )

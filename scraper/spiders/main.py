@@ -82,7 +82,7 @@ class ScrapeCorynRaw(Scrape):
             pprint.pprint(result['result'].dict(by_alias=True))
 
 
-class MassScrape(Scrape):
+class MonsterMassScrape(Scrape):
     @staticmethod
     def get_scraper_information() -> ScraperInformation:
         return ScraperInformation(
@@ -98,5 +98,21 @@ class MassScrape(Scrape):
         collection.insert_many(list(result['result'].dict(by_alias=True) for result in results))
 
 
+class ItemMassScrape(Scrape):
+    @staticmethod
+    def get_scraper_information() -> ScraperInformation:
+        return ScraperInformation(
+            url='https://coryn.club/item.php?&show=250&order=name&p=0',
+            parser=ItemCompositeParser,
+            next_page=True,
+            converter=ItemInformationConverter()
+        )
+
+    def process_results(self, results: list[dict[str, BaseModel]]):
+        whiskey_database = WhiskeyDatabase(self.mongodb_client)
+        collection = whiskey_database.items_leaf
+        collection.insert_many(list(result['result'].dict(by_alias=True) for result in results))
+
+
 if __name__ == '__main__':
-    MassScrape().start()
+    ItemMassScrape().start()
