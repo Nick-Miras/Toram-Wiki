@@ -14,6 +14,7 @@ class Help(commands.Cog):
         __fields = {
             f'{pfx}item': 'Command for searching information about Toram Items',
             f'{pfx}level': 'Command for searching the most optimal monster for obtaining experience',
+            f'{pfx}monster': 'Command for searching information about Toram Monsters',
         }
         __admin_fields = {
             f'{pfx}set prefix': 'Sets the prefix'

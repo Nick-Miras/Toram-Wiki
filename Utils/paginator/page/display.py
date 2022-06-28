@@ -21,17 +21,17 @@ class PageDataTreeDecorator(ABC, Generic[D]):
         pass
 
 
-class ContentDisplay(PageDataTreeDecorator[ContentData], ABC):
+class MessageContentDisplay(PageDataTreeDecorator[ContentData], ABC):
     pass
 
 
-class ItemsDisplay(PageDataTreeDecorator[list[ui.Item]], ABC):
+class ButtonItemsDisplay(PageDataTreeDecorator[list[ui.Item]], ABC):
     pass
 
 
 class DisplayData(PydanticBaseModel):
-    items: Optional[Type[ItemsDisplay]] = None
-    content: Optional[Type[ContentDisplay]] = None
+    items: Optional[Type[ButtonItemsDisplay]] = None
+    content: Optional[Type[MessageContentDisplay]] = None
 
     class Config:
         arbitrary_types_allowed = True

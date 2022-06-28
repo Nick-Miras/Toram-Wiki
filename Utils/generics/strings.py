@@ -21,3 +21,22 @@ def remove_underscores(string: str) -> str:
     if string.startswith("_"):
         return string
     return string.replace("_", " ")
+
+
+def strip_enclosing_parentheses(string: str) -> str:
+    """strip enclosing parentheses from a string"""
+    return string.strip("()")
+
+
+def strip_enclosing_brackets(string: str) -> str:
+    """strip enclosing brackets from a string"""
+    return string.strip("[]")
+
+
+def convert_to_bool(string: str) -> bool:
+    """convert the string 'Yes' or 'No' to bool"""
+    match string.lower():
+        case 'yes':
+            return True
+        case 'no':
+            return False

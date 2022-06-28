@@ -7,6 +7,10 @@ def normalize_space(string: str) -> str:
     return f'normalize-space({string})'
 
 
+def normalize_space_from_node(container: Selector) -> str:
+    return container.xpath(normalize_space('.')).get()
+
+
 def substring_before(string: str, divider: str) -> str:
     return f'substring-before({string}, "{divider}")'
 

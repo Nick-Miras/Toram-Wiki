@@ -70,6 +70,7 @@ class BaseParser(ABC):
 class CompositeParser(BaseParser, ABC):
     type: Final = ParserType.Composite
     parsers: list[Type[ParserLeaf]] = []
+    parser_leaf_class: Type[ParserLeaf]
 
     @classmethod
     def get_result(cls, container: SelectorType) -> list[ParserResults]:
@@ -100,14 +101,13 @@ class CompositeParser(BaseParser, ABC):
     def get_class(cls):
         return cls.__class__
 
-    @staticmethod
-    @abstractmethod
-    def parser_validator(parser: Type[ParserLeaf]) -> tuple[bool, Optional[str]]:
-        """
-        Returns
-        -------
-        boolean and error string
-        """
+    @classmethod
+    @final
+    def parser_validator(cls, parser: Type[ParserLeaf]) -> tuple[bool, Optional[str]]:
+        expected_parser = cls.parser_leaf_class
+        if isinstance(parser, expected_parser) is False:
+            return False, f'Expected {expected_parser} not {parser.__class__}'
+        return True, None
 
 
 class ParserLeaf(BaseParser, ABC):  # template design pattern
