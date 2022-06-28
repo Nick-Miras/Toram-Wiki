@@ -24,20 +24,23 @@ class AutoCompleteSearch(SearchStrategy):
                         'query': query.to_search,
                         'path': 'name',
                         'fuzzy': {
-                            'maxEdits': 1,
-                            'prefixLength': 0
+                            'maxEdits': 2,
+                            'prefixLength': 1
                         }
+                    },
+                    'highlight': {
+                        'path': 'name',
                     }
                 }
             }, {
                 '$addFields': {
-                    'score': {
-                        '$meta': 'searchScore'
+                    'highlights': {
+                        '$meta': 'searchHighlights'
                     }
                 }
             }, {
                 '$sort': {
-                    'score': -1
+                    'highlights.score': -1
                 }
             }, {
                 '$limit': limit
