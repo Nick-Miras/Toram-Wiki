@@ -2,56 +2,24 @@ from abc import abstractmethod, ABC
 
 from pymongo.command_cursor import CommandCursor
 
-from database import indexes
+from database.indexes import AggregationIndexes
 from database.models import QueryInformation
 
 
 class SearchStrategy(ABC):
 
     @abstractmethod
-    def query(self, query: QueryInformation, *, limit: int = 100) -> CommandCursor:
+    def query(self, query: QueryInformation, index: AggregationIndexes, *, limit: int = 100) -> CommandCursor:
         pass
 
 
-class EdgeGramSearch(SearchStrategy):
+class AutoCompleteSearch(SearchStrategy):
 
-    def query(self, query: QueryInformation, *, limit: int = 100) -> CommandCursor:
+    def query(self, query: QueryInformation, index: AggregationIndexes, *, limit: int = 100) -> CommandCursor:
         return query.collection.aggregate([
             {
                 '$search': {
-                    'index': indexes.ItemsCompositeEdgeGram,
-                    'autocomplete': {
-                        'query': query.to_search,
-                        'path': 'name',
-                        'fuzzy': {
-                            'maxEdits': 1,
-                            'prefixLength': 1
-                        }
-                    }
-                }
-            }, {
-                '$addFields': {
-                    'score': {
-                        '$meta': 'searchScore'
-                    }
-                }
-            }, {
-                '$sort': {
-                    'score': -1
-                }
-            }, {
-                '$limit': limit
-            }
-        ])
-
-
-class TriGramSearch(SearchStrategy):
-
-    def query(self, query: QueryInformation, *, limit: int = 100) -> CommandCursor:
-        return query.collection.aggregate([
-            {
-                '$search': {
-                    'index': indexes.ItemsCompositeTriGram,
+                    'index': index.value,
                     'autocomplete': {
                         'query': query.to_search,
                         'path': 'name',
@@ -79,5 +47,5 @@ class TriGramSearch(SearchStrategy):
 
 class TitleSearch(SearchStrategy):
 
-    def query(self, query: QueryInformation, limit: int = 100) -> list[dict]:
+    def query(self, query: QueryInformation, index: AggregationIndexes, *, limit: int = 100) -> CommandCursor:
         ...

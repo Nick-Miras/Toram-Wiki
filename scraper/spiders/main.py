@@ -1,4 +1,5 @@
 """in case if developer wants to scraper manually"""
+import pprint
 from abc import ABC, abstractmethod
 from typing import final
 
@@ -9,8 +10,9 @@ from Utils.generics import split_by_chunk
 from database import get_mongodb_client
 from database.command.write import InsertMany, DatabaseOperations
 from database.models import WhiskeyDatabase
-from scraper.spiders.converters import ItemInformationConverter
+from scraper.spiders.converters import ItemInformationConverter, MonsterInformationConverter
 from scraper.spiders.parsers.coryn.item import ItemCompositeParser
+from scraper.spiders.parsers.coryn.monster import MonsterCompositeParser
 from scraper.spiders.scrapers import ScraperInformation
 from scraper.spiders.scrapers.concrete_scrapers import CorynScraper
 
@@ -68,30 +70,31 @@ class ScrapeCorynRaw(Scrape):
     @staticmethod
     def get_scraper_information() -> ScraperInformation:
         return ScraperInformation(
-            url='https://coryn.club/item.php?&show=250&order=name&p=23',
-            parser=ItemCompositeParser,
+            url='https://coryn.club/monster.php?&show=250&order=name&p=0',
+            parser=MonsterCompositeParser,
             next_page=True,
-            converter=ItemInformationConverter()
+            converter=MonsterInformationConverter()
         )
 
     @staticmethod
     def process_results(results: list[dict]) -> None:
-        return
+        for result in results:
+            pprint.pprint(result['result'].dict(by_alias=True))
 
 
 class MassScrape(Scrape):
     @staticmethod
     def get_scraper_information() -> ScraperInformation:
         return ScraperInformation(
-            url='https://coryn.club/item.php?&show=250&order=name&p=0',
-            parser=ItemCompositeParser,
+            url='https://coryn.club/monster.php?&show=250&order=name&p=0',
+            parser=MonsterCompositeParser,
             next_page=True,
-            converter=ItemInformationConverter()
+            converter=MonsterInformationConverter()
         )
 
     def process_results(self, results: list[dict[str, BaseModel]]):
         whiskey_database = WhiskeyDatabase(self.mongodb_client)
-        collection = whiskey_database.items_leaf
+        collection = whiskey_database.monsters_leaf
         collection.insert_many(list(result['result'].dict(by_alias=True) for result in results))
 
 

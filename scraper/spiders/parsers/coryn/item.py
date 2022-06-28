@@ -4,8 +4,9 @@ from typing import Optional, Generator
 
 from pydantic import HttpUrl
 
+from Utils.dataclasses.abc import ItemType, get_item_type
 from Utils.dataclasses.item import MarketValueDict, MaterialsDict, RecipeDict, LocationDict, UsesDict, StatsDict, \
-    get_requirement_type, ItemType, get_item_type, RequirementTypeSequence
+    get_requirement_type, RequirementTypeSequence
 from Utils.generics import arrays
 from Utils.generics.numbers import try_int, extract_integer_from, convert_to_type_if_not_none
 from Utils.generics.xpath import normalize_space, substring_before, extract_string_from_node
@@ -437,12 +438,7 @@ class ItemCompositeParser(CompositeParser):
         UpgradesFromParser,
         StatsParser
     ]
-
-    @staticmethod
-    def parser_validator(parser: ParserLeaf) -> tuple[bool, Optional[str]]:
-        if isinstance(parser, ItemParserLeaf.__class__) is False:
-            return False, f'Expected {ItemParserLeaf} not {parser.__class__}'
-        return True, None
+    parser_leaf_class = ItemParserLeaf
 
 
 class UpgradesCompositeParser(ItemCompositeParser):

@@ -1,6 +1,6 @@
 import re
 from abc import ABC
-from typing import Optional, Generator
+from typing import Generator
 
 from Utils.dataclasses.levelling import ExpData
 from Utils.generics.numbers import extract_integer_from, get_float_from, try_int, to_ordinal
@@ -117,9 +117,4 @@ class LevellingCompositeParser(CompositeParser):
         MobLocation,
         ExpInformation
     ]
-
-    @staticmethod
-    def parser_validator(parser: ParserLeaf) -> tuple[bool, Optional[str]]:
-        if isinstance(parser, LevellingParserLeaf.__class__) is False:
-            return False, f'Expected {LevellingParserLeaf} not {parser.__class__}'
-        return True, None
+    parser_leaf_class = LevellingParserLeaf

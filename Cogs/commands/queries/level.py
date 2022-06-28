@@ -14,7 +14,7 @@ from Utils.generics.discord import to_message_data, send_with_paginator
 from Utils.generics.numbers import seperate_integer
 from Utils.paginator.buttons import BetterSelectContainer, SelectContainerData, GoBackTwice
 from Utils.paginator.buttons import GoLeft, GoRight, GoLast, GoFirst
-from Utils.paginator.page.display import ContentDisplay, ItemsDisplay, DisplayData
+from Utils.paginator.page.display import MessageContentDisplay, ButtonItemsDisplay, DisplayData
 from Utils.paginator.page.models import TreeInformation
 from Utils.paginator.page.tree import PageDataTree, PageDataNode, PageDataNodePromise, PageTreeController
 from Utils.paginator.page.view import PaginatorView
@@ -49,7 +49,7 @@ class LevellingNodeDropdown(BetterSelectContainer):
         self.controller.goto_child(self.values[0])
 
 
-class LevellingChildContent(ContentDisplay):
+class LevellingChildMessageContent(MessageContentDisplay):
 
     def get_data(self) -> D:
         data = self.tree.data
@@ -72,7 +72,7 @@ class LevellingChildContent(ContentDisplay):
         return to_message_data(embed)
 
 
-class LevellingChildItems(ItemsDisplay):
+class LevellingChildButtonItems(ButtonItemsDisplay):
 
     def get_data(self) -> D:
         sibling_number = len(self.tree.parent.children)
@@ -86,7 +86,7 @@ class LevellingChildItems(ItemsDisplay):
                     GoLast(controller)]
 
 
-class LevellingRootContent(ContentDisplay):
+class LevellingRootMessageContent(MessageContentDisplay):
 
     def get_data(self) -> D:
         mob_types = list(child_of_root.name for child_of_root in self.tree.children)
@@ -108,7 +108,7 @@ class LevellingRootContent(ContentDisplay):
         return to_message_data(embed)
 
 
-class LevellingRootItems(ItemsDisplay):
+class LevellingRootButtonItems(ButtonItemsDisplay):
 
     def get_data(self) -> D:
         select_options = [SelectOption(label=child.name.title(), value=child.name) for child in self.tree.children]
@@ -154,7 +154,7 @@ async def client(ctx: Ctx, level: int):
         return LevellingPageNode[list[list[LevellingInformation]]](
             controller=controller,
             information=TreeInformation(),
-            display_data=DisplayData(items=LevellingChildItems, content=LevellingChildContent),
+            display_data=DisplayData(items=LevellingChildButtonItems, content=LevellingChildMessageContent),
             data=data
         )
 
@@ -167,7 +167,7 @@ async def client(ctx: Ctx, level: int):
     page_root = LevellingPageNode(
         controller=controller,
         information=TreeInformation(),
-        display_data=DisplayData(items=LevellingRootItems, content=LevellingRootContent),
+        display_data=DisplayData(items=LevellingRootButtonItems, content=LevellingRootMessageContent),
         children=sorted(page_mob_type, key=lambda node: sort_by_mob_hierachy(node.name))
     )
     controller.current = page_root

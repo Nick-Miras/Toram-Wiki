@@ -10,14 +10,17 @@ from discord.ext import commands
 
 from Cogs.exceptions import CmdError
 from Utils.constants import images, colors
-from Utils.dataclasses.item import ItemComposite, ItemLeaf, return_default_image, get_item_type
+from Utils.dataclasses.abc import get_item_type
+from Utils.dataclasses.item import ItemComposite, ItemLeaf, return_default_image
 from Utils.generics import split_by_max_character_limit, arrays
 from Utils.generics.discord import to_message_data, send_with_paginator
 from Utils.paginator.buttons import GoLeft, GoRight, GoFirst, GoLast, BetterSelectContainer, SelectContainerData, GoBack
-from Utils.paginator.page import PageDataNode, PageDataNodePromise, PageDataTree, ContentDisplay, ItemsDisplay, \
+from Utils.paginator.page import PageDataNode, PageDataNodePromise, PageDataTree, MessageContentDisplay, \
+    ButtonItemsDisplay, \
     TreeInformation, DisplayData, PageTreeController, PaginatorView
 from database import get_mongodb_client
-from database.command.read import TriGramSearch
+from database.command.read import AutoCompleteSearch
+from database.indexes import AggregationIndexes
 from database.models import WhiskeyDatabase, QueryInformation
 
 D = TypeVar('D')
@@ -87,7 +90,7 @@ class DisplayItemLeaf(IDisplayItemLeaf):
 
     def set_market_value(self, embed: discord.Embed) -> None:
         for key, value in dict(self.item.market_value).items():
-            embed.add_field(name=key.capitalize(), value=value, inline=False)
+            embed.add_field(name=key.capitalize(), value=value, inline=True)
 
     def set_image(self, embed: discord.Embed) -> None:
         embed.set_image(url=self.item.image)
@@ -199,7 +202,7 @@ class ItemRootPaginatedNode(PageDataNodePromise):
                 controller=child.controller,
                 information=TreeInformation(name=leaf_name),
                 data=leaf_data,
-                display_data=DisplayData(items=ItemLeafItemDisplay, content=ItemLeafDisplayContent)
+                display_data=DisplayData(items=ItemLeafItemDisplayButton, content=ItemLeafDisplayMessageContent)
             ))
         return child
 
@@ -238,17 +241,17 @@ class ItemDropdown(BetterSelectContainer):
         self.controller.goto_child(UUID(child_id))
 
 
-class ItemRootDisplayContent(ContentDisplay):
+class ItemRootDisplayMessageContent(MessageContentDisplay):
     def get_data(self) -> D:
         return
 
 
-class ItemRootItemDisplay(ItemsDisplay):
+class ItemRootItemDisplayButton(ButtonItemsDisplay):
     def get_data(self) -> D:
         return
 
 
-class ItemRootPaginatedDisplayContent(ContentDisplay):
+class ItemRootPaginatedDisplayMessageContent(MessageContentDisplay):
     def get_data(self) -> D:
         siblings = self.tree.parent.children
         current_page = siblings.index(self.tree)
@@ -267,7 +270,7 @@ class ItemRootPaginatedDisplayContent(ContentDisplay):
         return to_message_data(embed)
 
 
-class ItemRootPaginatedItemDisplay(ItemsDisplay):
+class ItemRootPaginatedItemDisplayButton(ButtonItemsDisplay):
 
     def get_data(self) -> D:
         siblings = self.tree.parent.children
@@ -289,7 +292,7 @@ class ItemRootPaginatedItemDisplay(ItemsDisplay):
         return [dropdown]
 
 
-class ItemCompositeDisplayContent(ContentDisplay):
+class ItemCompositeDisplayMessageContent(MessageContentDisplay):
     def get_data(self) -> D:
         children: list[PageDataTree] = self.tree.children
         children_as_string: list[str] = [
@@ -304,7 +307,7 @@ class ItemCompositeDisplayContent(ContentDisplay):
         return to_message_data(embed)
 
 
-class ItemCompositeItemDisplay(ItemsDisplay):
+class ItemCompositeItemDisplayButton(ButtonItemsDisplay):
     def get_data(self) -> D:
         controller = self.tree.controller
         children: list[PageDataTree] = self.tree.children
@@ -317,12 +320,12 @@ class ItemCompositeItemDisplay(ItemsDisplay):
         return [GoBack(controller), dropdown]
 
 
-class ItemLeafDisplayContent(ContentDisplay):
+class ItemLeafDisplayMessageContent(MessageContentDisplay):
     def get_data(self) -> D:
         return to_message_data(DisplayItemLeaf(self.tree.data).get_embed())
 
 
-class ItemLeafItemDisplay(ItemsDisplay):
+class ItemLeafItemDisplayButton(ButtonItemsDisplay):
     def get_data(self) -> D:
         return [GoBack(self.tree.controller)]
 
@@ -330,7 +333,11 @@ class ItemLeafItemDisplay(ItemsDisplay):
 def query_item(query: str) -> Optional[list[dict]]:
     items_composite = WhiskeyDatabase(get_mongodb_client()).items_composite
     matches: list[dict] = list(
-        TriGramSearch().query(QueryInformation(collection=items_composite, to_search=query), limit=25)
+        AutoCompleteSearch().query(
+            QueryInformation(collection=items_composite, to_search=query),
+            AggregationIndexes.ItemsCompositeTriGram,
+            limit=25
+        )
     )
     if len(matches) > 0:
         return matches
@@ -346,8 +353,8 @@ async def client(ctx: commands.Context, query_string: str):
             controller=controller,
             information=TreeInformation(name=item_composite.name),
             display_data=DisplayData(
-                items=ItemCompositeItemDisplay,
-                content=ItemCompositeDisplayContent
+                items=ItemCompositeItemDisplayButton,
+                content=ItemCompositeDisplayMessageContent
             ),
             data=item_composite
         ) for item_composite in (ItemComposite.parse_obj(match) for match in matches)
@@ -357,8 +364,8 @@ async def client(ctx: commands.Context, query_string: str):
             controller=controller,
             information=TreeInformation(),
             display_data=DisplayData(
-                items=ItemRootPaginatedItemDisplay,
-                content=ItemRootPaginatedDisplayContent
+                items=ItemRootPaginatedItemDisplayButton,
+                content=ItemRootPaginatedDisplayMessageContent
             ),
             children=item_composite_chunk
         ) for item_composite_chunk in arrays.split_by_chunk(page_item_composite, 5)

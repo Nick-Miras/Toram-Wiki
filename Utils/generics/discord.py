@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+from io import BytesIO
 from typing import Optional
 
 import discord
+import requests
 from discord import Embed
 from discord.ext import commands
 
@@ -11,7 +13,7 @@ from Utils.dataclasses.discord import ContentData
 from Utils.paginator.page import PaginatorView
 
 
-def to_message_data(value) -> Optional[ContentData]:
+def to_message_data(value: str | Embed) -> Optional[ContentData]:
     """transforms the data into a :class:`dict` to be used by :class:`discord.Message`
     """
     if isinstance(value, str):
@@ -147,3 +149,20 @@ class ErrorEmbed(EmbedModels):
         embed.set_thumbnail(url=images.EXCLAMATION)
         embed.set_author(name='Error!')
         return embed
+
+
+def get_image_from_link(link: str) -> Optional[discord.File]:
+    """
+    Returns:
+        Optional[discord.File]
+    """
+    if not link:
+        return
+    if not link.startswith('http'):
+        link = 'http:' + link
+    try:
+        response = requests.get(link)
+        if response.status_code == 200:
+            return discord.File(BytesIO(response.content), filename=link.split('/')[-1])
+    except Exception:
+        return

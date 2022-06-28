@@ -6,7 +6,7 @@ from typing import Optional, TypeAlias
 from bson import ObjectId
 from pydantic import HttpUrl, Field, validator
 
-from .abc import WikiBaseModel, WikiBaseConfig
+from .abc import WikiBaseModel, WikiBaseConfig, ItemType, IdType, DyeType
 from ..generics import remove_duplicates
 from ..generics.strings import remove_underscores
 from ..types import IdStringPair
@@ -14,50 +14,6 @@ from ..types import IdStringPair
 OptionalInt = Optional[int]
 OptionalStr = Optional[str]
 StringOrInt = str | int
-IdType = int | ObjectId
-
-
-class ItemType(Enum):
-
-    # Others
-    Usable = 'Usable'
-    Material = 'Material'
-    Gem = 'Gem'
-    RefinementSupport = 'Refinement Support'
-    Piercer = 'Piercer'
-    Ore = 'Ore'
-
-    # Crystas
-    ArmorCrysta = 'Armor Crysta'
-    NormalCrysta = 'Normal Crysta'
-    SpecialCrysta = 'Special Crysta'
-    WeaponCrysta = 'Weapon Crysta'
-    AdditionalCrysta = 'Additional Crysta'
-    EnhancerCrystaRed = 'Enhancer Crysta (Red)'
-    EnhancerCrystaBlue = 'Enhancer Crysta (Blue)'
-    EnhancerCrystaGreen = 'Enhancer Crysta (Green)'
-    EnhancerCrystaPurple = 'Enhancer Crysta (Purple)'
-    EnhancerCrystaYellow = 'Enhancer Crysta (Yellow)'
-
-    # Equipment
-    SpecialGear = 'Special'
-    AdditionalGear = 'Additional'
-    Armor = 'Armor'
-
-    # Weapons
-    Dagger = 'Dagger'
-    Katana = 'Katana'
-    Arrow = 'Arrow'
-    MagicDevice = 'Magic Device'
-    OneHandedSword = '1 Handed Sword'
-    TwoHandedSword = '2 Handed Sword'
-    Staff = 'Staff'
-    Halberd = 'Halberd'
-    Bow = 'Bow'
-    Bowgun = 'Bowgun'
-    Knuckles = 'Knuckles'
-    Shield = 'Shield'
-    Regislet = 'Regislet'
 
 
 def return_default_image(item_type: ItemType) -> str:
@@ -119,7 +75,7 @@ def return_default_image(item_type: ItemType) -> str:
 
         # others
         case ItemType.Usable:
-            return ""
+            return "https://cdn.discordapp.com/emojis/650557983800950795.webp?size=4096&quality=lossless"
         case ItemType.Material:
             return ""
         case ItemType.Gem:
@@ -161,17 +117,6 @@ def get_requirement_type(partial_type: str) -> RequirementTypeSequence:
     return remove_duplicates(RequirementType(_) for _ in partial_type.split(','))
 
 
-def get_item_type(partial_type: str) -> Optional[ItemType]:
-    """
-    Returns:
-        None or ItemType due to Coryn classifying regislets as items without specifying their item types
-    """
-    try:
-        return ItemType(partial_type)
-    except ValueError:
-        return
-
-
 class MarketValueDict(WikiBaseModel):
     sell: OptionalInt
     process: OptionalStr
@@ -193,7 +138,7 @@ class RecipeDict(WikiBaseModel):
 
 class LocationDict(WikiBaseModel):
     monster: Optional[IdStringPair]  # monster id and display string
-    dye: Optional[tuple[StringOrInt, StringOrInt, StringOrInt]]
+    dye: Optional[DyeType]
     map: Optional[IdStringPair]  # map id and display string
 
 

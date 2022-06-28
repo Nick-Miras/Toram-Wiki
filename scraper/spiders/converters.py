@@ -6,6 +6,7 @@ from typing import final
 from Utils.dataclasses.abc import WikiBaseModel
 from Utils.dataclasses.item import ItemLeaf
 from Utils.dataclasses.levelling import LevellingInformation
+from Utils.dataclasses.monster import MonsterLeaf
 from scraper.spiders.parsers.models import ParserResults
 
 
@@ -64,3 +65,10 @@ class ItemInformationConverter(DataclassFactory):
         upgrades_from = result.pop('upgrades from')
         result.update({'upgrades': {'from': upgrades_from, 'into': upgrades_into}})
         return ItemLeaf.parse_obj(result)
+
+
+class MonsterInformationConverter(DataclassFactory):
+
+    @staticmethod
+    def build(result: dict) -> WikiBaseModel:
+        return MonsterLeaf.parse_obj(result)
