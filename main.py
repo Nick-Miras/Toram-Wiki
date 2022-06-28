@@ -13,7 +13,7 @@ from database.models import WhiskeyDatabase
 
 
 async def load_cogs(bot: commands.Bot):  # Loads all the Cogs
-    skip_files = ('exceptions', 'system')  # DO NOT LOAD THIS FILES
+    skip_files = ('exceptions',)  # DO NOT LOAD THIS FILES
     file_paths = [r for r, _, _ in os.walk('./Cogs') if 'cache' not in r]
 
     for path in file_paths:
