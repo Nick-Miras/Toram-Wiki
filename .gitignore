@@ -4,3 +4,4 @@ test*.py
 *.old
 tests/
 ToramWiki.code-workspace
+main.py
