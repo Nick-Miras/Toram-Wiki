@@ -31,12 +31,7 @@ class Scraper(scrapy.Spider, ABC):
     def parse(self, response) -> Generator[dict | scrapy.Request, None, None]:
         for result in self.parser(self.container_path, self.converter).parse(response):
             # type: list[ParserResults] | WikiBaseModel
-
             yield {'result': result}
-            # if isinstance(result, WikiBaseModel):
-            #     yield PydanticResultWrapper(result=result)
-            # else:
-            #     yield ParserResultWrapper(result=result)
 
         if self.next_page is True:
             yield self.get_next_page(response)

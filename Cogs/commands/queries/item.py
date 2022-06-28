@@ -388,7 +388,7 @@ class ItemQueryCommands(commands.Cog):
         await client(ctx, query)
 
     @app_commands.command(name='item')
-    @app_commands.describe(query='The item to search for')
+    @app_commands.describe(query='The Item to Search For')
     @app_commands.checks.bot_has_permissions(send_messages=True)
     async def item_app_command(self, interaction: Interaction, query: str):
         await interaction.response.defer()

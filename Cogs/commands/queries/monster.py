@@ -264,7 +264,7 @@ class MonsterQueryCommands(commands.Cog):
         await client(ctx, query)
 
     @app_commands.command(name='monster')
-    @app_commands.describe(query='The monster to search for')
+    @app_commands.describe(query='The Monster to Search For')
     @app_commands.checks.bot_has_permissions(send_messages=True)
     async def monster_app_command(self, interaction: Interaction, query: str):
         await interaction.response.defer()

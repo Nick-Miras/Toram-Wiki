@@ -13,7 +13,7 @@ from database.models import WhiskeyDatabase
 
 
 async def load_cogs(bot: commands.Bot):  # Loads all the Cogs
-    skip_files = ('exceptions',)  # DO NOT LOAD THIS FILES
+    skip_files = ('exceptions', 'system')  # DO NOT LOAD THIS FILES
     file_paths = [r for r, _, _ in os.walk('./Cogs') if 'cache' not in r]
 
     for path in file_paths:
@@ -73,7 +73,6 @@ class MyBot(commands.Bot):
     async def on_ready(self):
         await self.copy_global_to(guild.id for guild in self.guilds)
         await self.tree.sync()
-        await self.change_presence(activity=discord.Game(name=f'Toram | @mention_me'))
         print(f'Logged in as {self.user} (ID: {self.user.id})')
         print('------')
 

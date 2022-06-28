@@ -1,6 +1,6 @@
 import discord
 import pymongo.errors
-from discord.ext import commands
+from discord.ext import commands, tasks
 from pymongo.results import DeleteResult
 from pymongo.results import InsertManyResult
 
@@ -59,6 +59,18 @@ class System(commands.Cog, name='system'):
     async def on_ready(self):
         self.remove_invalid_guild_in_database(self.bot)
         self.add_not_added_guilds(self.bot)
+
+    @tasks.loop(minutes=1)
+    async def change_presence_every_minute(self):
+        """changes the presence of the bot every minute with different description after every two minutes"""
+        if self.bot.uptime.minute % 2 == 0:
+            await self.bot.change_presence(activity=discord.Game(name=f'@mention_me for help'))
+        else:
+            await self.bot.change_presence(activity=discord.Game(name=f'with {len(self.bot.guilds)} servers'))
+
+    @change_presence_every_minute.before_loop
+    async def wait_until_bot_is_ready(self):
+        await self.bot.wait_until_ready()
 
 
 async def setup(bot):
