@@ -1,3 +1,8 @@
+import json
+from enum import Enum
+from typing import Type
+
+
 class Grams:  # n word grams
 
     @staticmethod
@@ -40,3 +45,13 @@ def convert_to_bool(string: str) -> bool:
             return True
         case 'no':
             return False
+
+
+def convert_json_string_to_dict(string: str) -> dict:
+    """convert a json string to a dictionary"""
+    return json.loads(string)
+
+
+def is_valid_enum_value(string: str, enum: Type[Enum]) -> bool:
+    """check if a string is a valid enum value"""
+    return string in [member.value for member in enum.__members__.values()]

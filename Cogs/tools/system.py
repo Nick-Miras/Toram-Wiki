@@ -9,7 +9,6 @@ from database import get_mongodb_client, mongo_collection
 from database.models import WhiskeyDatabase
 
 
-#  TODO: Add Logging
 class GuildDatabase:
 
     def __init__(self, collection: mongo_collection):

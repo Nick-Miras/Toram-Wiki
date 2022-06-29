@@ -3,7 +3,7 @@ from bson.codec_options import TypeRegistry
 from pydantic import BaseModel as PydanticBaseModel
 from pymongo import MongoClient
 
-from database.codec import CollectionCodec
+from database.codec import CollectionCodec, DiscordEmbedCodec
 from database.types import mongo_database, mongo_collection
 
 
@@ -21,6 +21,8 @@ class WhiskeyDatabase:
 
         # mementos database
         self.mementos: mongo_database = client.mementos
+
+        self.pages: mongo_database = client.pages
 
     @property
     def discord_guilds(self) -> mongo_collection:
@@ -45,6 +47,12 @@ class WhiskeyDatabase:
     @property
     def monsters_leaf(self) -> mongo_collection:
         return self.monsters.monsters.leaf
+
+    @property
+    def pages_help(self) -> mongo_collection:
+        return self.pages.get_collection(
+            'pages.help', codec_options=CodecOptions(type_registry=TypeRegistry([DiscordEmbedCodec()]))
+        )
 
     @property
     def items_leaf_mementos(self) -> mongo_collection:

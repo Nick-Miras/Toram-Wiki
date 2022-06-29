@@ -1,3 +1,4 @@
+import discord
 from bson.codec_options import TypeCodec
 
 import database
@@ -52,5 +53,23 @@ class CollectionCodec(TypeCodec):
         custom type."""
         try:
             return collection_string_to_obj(value)
+        except (DatabaseNotFound, CollectionNotFound, ValueError):
+            return value
+
+
+class DiscordEmbedCodec(TypeCodec):
+    python_type = discord.Embed
+    bson_type = dict
+
+    def transform_python(self, value: discord.Embed) -> dict:
+        """Function that transforms a custom type value into a type
+        that BSON can encode."""
+        return value.to_dict()
+
+    def transform_bson(self, value: dict) -> dict | discord.Embed:
+        """Function that transforms a vanilla BSON type value into our
+        custom type."""
+        try:
+            return discord.Embed.from_dict(value)
         except (DatabaseNotFound, CollectionNotFound, ValueError):
             return value
