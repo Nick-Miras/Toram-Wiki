@@ -1,6 +1,45 @@
 import discord
 from discord.ext import commands
 
+from Utils.constants import images
+from Utils.paginator.page import PageDataNode, MessageContentDisplay, D, ButtonItemsDisplay
+
+
+class HelpRootNode(PageDataNode):
+
+    def initialize(self) -> None:
+        pass
+
+
+class HelpRootNodeDisplayMessageContent(MessageContentDisplay):
+
+    def get_data(self) -> D:
+        pass
+
+
+class HelpRootNodeButtonsItemDisplay(ButtonItemsDisplay):
+
+    def get_data(self) -> D:
+        pass
+
+
+class HelpPageNode(PageDataNode):
+
+    def initialize(self) -> None:
+        pass
+
+
+class HelpPageNodeDisplayMessageContent(MessageContentDisplay):
+
+    def get_data(self) -> D:
+        pass
+
+
+class HelpPageNodeButtonsItemDisplay(ButtonItemsDisplay):
+
+    def get_data(self) -> D:
+        pass
+
 
 class Help(commands.Cog):
 
@@ -12,19 +51,24 @@ class Help(commands.Cog):
         pfx = ctx.prefix
         # main fields
         __fields = {
-            f'{pfx}item': 'Command for searching information about Toram Items',
-            f'{pfx}level': 'Command for searching the most optimal monster for obtaining experience',
-            f'{pfx}monster': 'Command for searching information about Toram Monsters',
+            f'{pfx}item': 'Command for Searching Information About Toram Items',
+            f'{pfx}level': 'Command for Searching the Most Optimal Monster for Obtaining Experience',
+            f'{pfx}monster': 'Command for Searching Information About Toram Monsters',
+            f'{pfx}partners': 'Our Partners!',
         }
         __admin_fields = {
-            f'{pfx}set prefix': 'Sets the prefix'
+            f'{pfx}set prefix': 'Sets the prefix',
+            f'{pfx}set announcement': 'Sets the announcement channel',
         }
 
         if ctx.author.guild_permissions.administrator:
             __fields.update(__admin_fields)
 
-        embed = discord.Embed()
-        embed.set_author(name='Help')
+        embed = discord.Embed(
+            colour=discord.Colour.blurple(),
+        )
+        embed.set_author(name='Help', icon_url=images.SCROLL2)
+        embed.set_thumbnail(url=images.HELP_ICON)
         for name, value in __fields.items():
             embed.add_field(name=name, value=value, inline=False)
         await ctx.send(embed=embed)

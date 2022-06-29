@@ -64,7 +64,7 @@ class IDisplayItemLeaf(ABC):
 
         embed = discord.Embed()
 
-        embed.set_author(name=self.item.name, icon_url=images.SCROLL)
+        embed.set_author(name=self.item.name, icon_url=images.SCROLL2)
         embed.set_footer(text='Credits: coryn.club')
 
         if image_link := return_default_image(get_item_type(self.item.type)):
@@ -273,7 +273,7 @@ class ItemRootPaginatedDisplayMessageContent(MessageContentDisplay):
             description='\n'.join(children_as_string)
         )
         embed.set_author(name='Results')
-        embed.set_thumbnail(url=images.MONOCLE)
+        embed.set_thumbnail(url=images.SEARCH1)
         embed.set_footer(text=f'Page {current_page + 1}/{len(siblings)}')
         return to_message_data(embed)
 
@@ -311,7 +311,7 @@ class ItemCompositeDisplayMessageContent(MessageContentDisplay):
             description='\n'.join(children_as_string)
         )
         embed.set_author(name=self.tree.name)
-        embed.set_thumbnail(url=images.MONOCLE)
+        embed.set_thumbnail(url=images.SEARCH1)
         return to_message_data(embed)
 
 

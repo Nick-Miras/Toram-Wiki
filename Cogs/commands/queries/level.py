@@ -8,6 +8,7 @@ from discord.ext.commands import Context as Ctx
 from scrapyscript import Job as ScrapyJob, Processor as ScrapyProcessor
 
 from Cogs.exceptions import CmdError
+from Utils.constants import images
 from Utils.dataclasses.levelling import LevellingInformation, ExpData
 from Utils.generics import arrays
 from Utils.generics.discord import to_message_data, send_with_paginator
@@ -54,8 +55,11 @@ class LevellingChildMessageContent(MessageContentDisplay):
     def get_data(self) -> D:
         data = self.tree.data
         embed = discord.Embed(
-            title=self.tree.parent.name.title()
+            title=self.tree.parent.name.title(),
+            colour=discord.Colour.blurple()
         )
+        embed.set_author(name='Leveling Information', icon_url=images.SCROLL2)
+        embed.set_thumbnail(url=images.LEVEL_UP)
         for datum in data:  # type: LevellingInformation
             def exp_string_builder(exp_data: ExpData) -> str:
                 exp, break_status, exp_progress = exp_data.values()
@@ -100,7 +104,11 @@ class LevellingRootMessageContent(MessageContentDisplay):
             for mob_type in mob_types
         }
 
-        embed = discord.Embed()
+        embed = discord.Embed(
+            colour=discord.Colour.blurple()
+        )
+        embed.set_author(name='Leveling Information', icon_url=images.SCROLL2)
+        embed.set_thumbnail(url=images.SEARCH1)
         for mob_type, mobs in data_by_mob_type.items():  # type: str, list[LevellingPageNode[list[LevellingInformation]]]
             mob_data: list[LevellingInformation] = arrays.flatten(node.data for node in [mob for mob in mobs])
             embed.add_field(name=mob_type.title(), value=f'Number of Mobs: {len(mob_data)}', inline=False)
