@@ -58,7 +58,6 @@ class Help(commands.Cog):
         }
         __admin_fields = {
             f'{pfx}set prefix': 'Sets the prefix',
-            f'{pfx}set announcement': 'Sets the announcement channel',
         }
 
         if ctx.author.guild_permissions.administrator:
