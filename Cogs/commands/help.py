@@ -66,8 +66,8 @@ class Help(commands.Cog):
         embed = discord.Embed(
             colour=discord.Colour.blurple(),
         )
-        embed.set_author(name='Help', icon_url=images.SCROLL2)
-        embed.set_thumbnail(url=images.HELP_ICON)
+        embed.set_author(name='Help')
+        embed.set_thumbnail(url=images.SCROLL2)
         for name, value in __fields.items():
             embed.add_field(name=name, value=value, inline=False)
         await ctx.send(embed=embed)
