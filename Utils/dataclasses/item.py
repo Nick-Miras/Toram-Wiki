@@ -86,6 +86,8 @@ def return_default_image(item_type: ItemType) -> str:
             return "https://cdn.discordapp.com/attachments/654287868612575263/789740560047013929/IMG_20201219_115652.png"
         case ItemType.Ore:
             return "https://cdn.discordapp.com/attachments/740178985589145684/788053476244324382/IMG_20201013_090044.png"
+        case ItemType.NinjutsuScroll:
+            return ""
 
 
 class RequirementType(Enum):
@@ -108,6 +110,7 @@ class RequirementType(Enum):
     SpecialGear = 'Special Gear'
     Halberd = 'Halberd'
     Armor = 'Armor'
+    NinjutsuScroll = 'Ninjutsu Scroll'
 
 
 RequirementTypeSequence: TypeAlias = list[RequirementType]

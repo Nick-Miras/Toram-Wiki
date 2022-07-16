@@ -73,6 +73,7 @@ class ItemType(Enum):
     Knuckles = 'Knuckles'
     Shield = 'Shield'
     Regislet = 'Regislet'
+    NinjutsuScroll = 'Ninjutsu Scroll'
 
 
 class Element(Enum):
