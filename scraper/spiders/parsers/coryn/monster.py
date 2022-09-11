@@ -29,7 +29,7 @@ class MonsterNameParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(str)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_name(container)
 
 
@@ -44,7 +44,7 @@ class MonsterLevelParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(int)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_level(container)
 
 
@@ -64,7 +64,7 @@ class MonsterDifficultyParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(Difficulty)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_difficulty(container)
 
 
@@ -79,7 +79,7 @@ class MonsterHPParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(int)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_hp(container)
 
 
@@ -99,7 +99,7 @@ class MonsterElementParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(Element)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_element(container)
 
 
@@ -114,7 +114,7 @@ class MonsterExpParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(int)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_exp(container)
 
 
@@ -129,7 +129,7 @@ class MonsterTamableStatusParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(bool)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_tamable_status(container)
 
 
@@ -145,7 +145,7 @@ class MonsterImageParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(str)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_image(container)
 
 
@@ -163,7 +163,7 @@ class MonsterLocationParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(IdStringPair)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_location(container)
 
 
@@ -198,7 +198,7 @@ class MonsterDropsParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(list[MonsterDrop])
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return list(
             cls.generate_monster_drops(container.xpath('.//div[@class="pagination-js-items monster-drop-list"]')))
 
@@ -215,7 +215,7 @@ class MonsterIdParser(MonsterParserLeaf):
 
     @classmethod
     @return_parser_results(int)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_monster_id(container)
 
 

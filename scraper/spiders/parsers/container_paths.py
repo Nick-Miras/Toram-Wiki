@@ -32,6 +32,13 @@ class MonsterPath(CorynContainerPaths):
         return '//div[./div/div[@class="card-title-inverse"]]'
 
 
+class SkillPath(CorynContainerPaths):
+
+    @staticmethod
+    def get() -> str:
+        return '//div[./div/div/p[@class="card-title"]]'
+
+
 class LevellingPath(CorynContainerPaths):
 
     @staticmethod

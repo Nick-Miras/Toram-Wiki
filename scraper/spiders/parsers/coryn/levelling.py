@@ -22,7 +22,7 @@ class MobType(LevellingParserLeaf):
 
     @classmethod
     @return_parser_results(str)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return container.xpath(normalize_space('./../preceding-sibling::div/h3[last()]/text()')).get()
 
 
@@ -31,7 +31,7 @@ class MobLevel(LevellingParserLeaf):
 
     @classmethod
     @return_parser_results(int)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return extract_integer_from(container.xpath('./div[@class="level-col-1"]/b').get())
 
 
@@ -50,7 +50,7 @@ class MobInformation(LevellingParserLeaf):
 
     @classmethod
     @return_parser_results(IdStringPair)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         container = container.xpath('./div[@class="level-col-2"]/p/b/a')
         return cls.get_id(container), cls.get_display_string(container)
 
@@ -60,7 +60,7 @@ class MobLocation(LevellingParserLeaf):
 
     @classmethod
     @return_parser_results(str)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return container.xpath('./div[@class="level-col-2"]/p[2]/text()').get()
 
 
@@ -103,7 +103,7 @@ class ExpInformation(LevellingParserLeaf):
 
     @classmethod
     @return_parser_results(list[ExpData])
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         container = container.xpath('./div[@class="level-col-3"]')
         return list(cls.generate_exp_data(container))
 

@@ -115,4 +115,4 @@ class ItemMassScrape(Scrape):
 
 
 if __name__ == '__main__':
-    ItemMassScrape().start()
+    MonsterMassScrape().start()

@@ -6,6 +6,7 @@ from typing import TypeVar, TypedDict, Generic, Optional
 import scrapy
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic.generics import GenericModel as PydanticGenericModel
+from scrapy.http.request.form import FormdataType
 
 ResultType = TypeVar('ResultType')
 
@@ -31,3 +32,14 @@ class ParserResultWrapper(scrapy.Item):
 
 class PydanticResultWrapper(scrapy.Item):
     result: PydanticBaseModel = scrapy.Field()
+
+
+class ScrapyFormData(PydanticGenericModel):
+    formname: Optional[str] = None
+    formid: Optional[str] = None
+    formnumber: Optional[int] = 0
+    formdata: FormdataType = None
+    clickdata: Optional[dict] = None
+    dont_click: bool = False
+    formxpath: Optional[str] = None
+    formcss: Optional[str] = None

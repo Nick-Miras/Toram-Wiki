@@ -44,7 +44,7 @@ class MarketValueParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(MarketValueDict)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         # not optional since everything can be processed or sold
         market_value_container = container.xpath(
             './/div[@class="item-prop mini"][./div/p[text()="Sell" or text()="Process" or text()="Duration"]]'
@@ -62,7 +62,7 @@ class AppearanceLinkParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(HttpUrl)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         cond, app_container = is_container_null(container, './/div[@class="app-div"]')
         if cond is True:
             return
@@ -97,7 +97,7 @@ class LocationParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(list[LocationDict])
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         cond, location_containers = is_container_null(container, './/div[@class="pagination-js-item"]')
         if cond is True:
             return
@@ -177,7 +177,7 @@ class RecipeParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(RecipeDict)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         cond, container = is_container_null(container, './/div[text()="Recipe"]/../following-sibling::div')
         if cond is True:
             return
@@ -221,7 +221,7 @@ class ItemUsesParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(list[UsesDict])
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         cond, container = is_container_null(container, './/div[./div[text() = "Used For"]]/following-sibling::div')
         if cond is True or len(return_val := list(cls.generate_uses(container))) == 0:
             return
@@ -245,7 +245,7 @@ class UpgradesIntoParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(list[IdStringPair])
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         cond, container = is_container_null(container, './/div[./div[text() = "Used For"]]/following-sibling::div')
         if cond is True or (return_val := cls.get_crysta(container)) is None:
             return
@@ -265,7 +265,7 @@ class UpgradesFromParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(list[IdStringPair])
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         cond, container = is_container_null(container, './/div[@class="table-grid item-basestat"]')
         if cond is True or (return_val := cls.get_crystas(container)) is None:
             return
@@ -372,7 +372,7 @@ class StatsParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(list[StatsDict])
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         cond, container = is_container_null(container, './/div[text() = "Stat/Effect"]/following-sibling::div')
         if cond is True:
             return
@@ -389,7 +389,7 @@ class IdParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(int)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.extract_id(container)
 
 
@@ -404,7 +404,7 @@ class ItemTypeParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(ItemType)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return get_item_type(cls.get_title(container))
 
 
@@ -419,7 +419,7 @@ class ItemNameParser(ItemParserLeaf):
 
     @classmethod
     @return_parser_results(str)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response) -> list[ParserResults]:
         return cls.get_title(container)
 
 

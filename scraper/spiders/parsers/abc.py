@@ -6,6 +6,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Generator, Optional, Type, Any, Final, final, Union
 
+from scrapy.http import Response
+
 from Utils.dataclasses.abc import WikiBaseModel
 from Utils.generics import arrays
 from Utils.types import SelectorType
@@ -28,9 +30,10 @@ def return_parser_results(type_var):
     """
 
     def function(func):
-        def arguments(cls, container: SelectorType) -> list[ParserResults]:
-            result = func(cls, container)
+        def arguments(cls, container: SelectorType, response: Response) -> list[ParserResults]:
+            result = func(cls, container, response)
             return [parser_results_builder(cls, result=result, type_var=type_var)]
+
         return arguments
     return function
 
@@ -57,14 +60,15 @@ class BaseParser(ABC):
         for container in containers:
             if container:
                 if self.converter is None:
-                    yield self.get_result(container)  # type: list[ParserResults]
+                    yield self.get_result(container, response)  # type: list[ParserResults]
                 else:
-                    yield self.converter.convert(self.get_result(container))  # type: WikiBaseModel
+                    yield self.converter.convert(self.get_result(container, response))  # type: WikiBaseModel
 
     @classmethod
     @abstractmethod  # protected method (if this was not python)
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
-        """The method that is used by the parse method to get results from the container object"""
+    def get_result(cls, container: SelectorType, response: Response) -> list[ParserResults]:
+        """The method that is used by the parse method to get results from the container object
+        """
 
 
 class CompositeParser(BaseParser, ABC):
@@ -73,10 +77,11 @@ class CompositeParser(BaseParser, ABC):
     parser_leaf_class: Type[ParserLeaf]
 
     @classmethod
-    def get_result(cls, container: SelectorType) -> list[ParserResults]:
+    def get_result(cls, container: SelectorType, response: Response) -> list[ParserResults]:
         def generate() -> Generator[ParserResults, None, None]:
             for parser in cls.parsers:
-                yield parser.get_result(container)
+                yield parser.get_result(container, response)
+
         return arrays.flatten(list(generate()))
 
     @classmethod
